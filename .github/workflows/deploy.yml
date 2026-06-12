@@ -33,7 +33,7 @@ jobs:
       - name: 安装 Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: "npm"
 
       - name: 安装依赖
@@ -63,18 +63,14 @@ jobs:
       - name: 安装 Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: "npm"
 
       - name: 安装依赖
         run: npm ci
 
       - name: 部署到 Vercel
-        run: |
-          npx vercel deploy \
-            --token="${{ secrets.VERCEL_TOKEN }}" \
-            --scope="${{ secrets.VERCEL_ORG_ID }}" \
-            --prod
+        run: npx vercel deploy --token="${{ secrets.VERCEL_TOKEN }}" --scope="${{ secrets.VERCEL_ORG_ID }}" --prod
         env:
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
