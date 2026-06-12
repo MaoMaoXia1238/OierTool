@@ -22,6 +22,7 @@ on:
   schedule:
     # 每日北京时间 08:00（UTC 00:00）执行爬虫
     - cron: "0 0 * * *"
+  workflow_dispatch:
 
 jobs:
   # ─────────────────── CI：测试 ───────────────────
@@ -89,8 +90,8 @@ jobs:
   # ─────────────────── 定时爬虫：每日 08:00 自动抓取数据 ───────────────────
   crawl:
     name: 定时爬取数据
-    # 仅在定时触发时运行（push/PR 不触发）
-    if: github.event_name == 'schedule'
+    # 仅在定时触发或手动触发时运行（push/PR 不触发）
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
 
     steps:
