@@ -42,6 +42,7 @@ next-env.d.ts
 # IDE
 .vscode/
 .idea/
+.trae/
 
 # OS
 .DS_Store
