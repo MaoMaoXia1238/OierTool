@@ -9,12 +9,10 @@ import { useEffect, useState } from "react";
 import { ContestList } from "@/components/ContestList";
 import type { ContestData } from "@/components/ContestCard";
 
-/** 支持的竞赛平台 */
-const PLATFORMS = ["全部", "Codeforces", "Luogu"] as const;
-
 /**
  * 竞赛日历页面组件
  * 从 API 获取竞赛数据，支持按平台筛选
+ * 平台筛选按钮根据数据中实际存在的平台动态生成。
  */
 export default function CalendarPage() {
   const [contests, setContests] = useState<ContestData[]>([]); // 所有比赛数据
@@ -40,6 +38,12 @@ export default function CalendarPage() {
     fetchContests();
   }, []);
 
+  // 从比赛数据中提取所有不重复的平台，按字典序排列
+  const platforms = [
+    "全部",
+    ...[...new Set(contests.map((c) => c.platform))].sort(),
+  ];
+
   // 平台筛选变化时更新显示
   useEffect(() => {
     if (activePlatform === "全部") {
@@ -58,7 +62,7 @@ export default function CalendarPage() {
 
       {/* 平台筛选 Tab */}
       <div className="mb-6 flex gap-2">
-        {PLATFORMS.map((platform) => (
+        {platforms.map((platform) => (
           <button
             key={platform}
             onClick={() => setActivePlatform(platform)}

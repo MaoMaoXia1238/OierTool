@@ -10,6 +10,8 @@ export const PLATFORM_LOGOS: Record<string, string> = {
   Codeforces: "/logos/codeforces.svg",
   /** Luogu（洛谷）平台 Logo */
   Luogu: "/logos/luogu.svg",
+  /** NowCoder（牛客）平台 Logo */
+  NowCoder: "/logos/nowcoder.svg",
 };
 
 /**
