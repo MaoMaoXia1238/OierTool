@@ -6,6 +6,7 @@
  */
 import { fetchCodeforcesContests } from "./spiders/codeforces";
 import { fetchLuoguContests } from "./spiders/luogu";
+import { fetchNowCoderContests } from "./spiders/nowcoder";
 import { runPipeline, disconnectPipeline, ContestInput } from "./pipeline";
 
 async function main() {
@@ -13,6 +14,7 @@ async function main() {
 
   let cfContests: ContestInput[] = [];
   let lgContests: ContestInput[] = [];
+  let ncContests: ContestInput[] = [];
 
   try {
     cfContests = await fetchCodeforcesContests();
@@ -28,9 +30,16 @@ async function main() {
     console.error("[Crawl] 洛谷失败:", e);
   }
 
+  try {
+    ncContests = await fetchNowCoderContests();
+    console.log(`[Crawl] 牛客: ${ncContests.length} 条`);
+  } catch (e) {
+    console.error("[Crawl] 牛客失败:", e);
+  }
+
   // 合并数据后一起写入
   try {
-    const all = [...cfContests, ...lgContests];
+    const all = [...cfContests, ...lgContests, ...ncContests];
     const result = await runPipeline(all);
     console.log(`[Crawl] 写入: 新增=${result.inserted}, 跳过=${result.skipped}`);
   } catch (e) {
