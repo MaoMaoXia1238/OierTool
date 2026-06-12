@@ -19,6 +19,9 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  schedule:
+    # 每日北京时间 08:00（UTC 00:00）执行爬虫
+    - cron: "0 0 * * *"
 
 jobs:
   # ─────────────────── CI：测试 ───────────────────
@@ -82,3 +85,36 @@ jobs:
         env:
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
+  # ─────────────────── 定时爬虫：每日 08:00 自动抓取数据 ───────────────────
+  crawl:
+    name: 定时爬取数据
+    # 仅在定时触发时运行（push/PR 不触发）
+    if: github.event_name == 'schedule'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 安装 Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: "npm"
+
+      - name: 安装依赖
+        run: npm ci
+
+      - name: 安装 Playwright 浏览器（洛谷爬虫需要）
+        run: npx playwright install chromium
+
+      - name: 生成 Prisma Client
+        run: npx prisma generate
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+
+      - name: 执行爬虫
+        run: npx tsx crawler/crawl-once.ts
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
