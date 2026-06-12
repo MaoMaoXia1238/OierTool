@@ -69,6 +69,14 @@ jobs:
       - name: 安装依赖
         run: npm ci
 
+      - name: 生成 Prisma Client
+        run: npx prisma generate
+
+      - name: 运行数据库迁移
+        run: npx prisma migrate deploy
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+
       - name: 部署到 Vercel
         run: npx vercel deploy --token="${{ secrets.VERCEL_TOKEN }}" --scope="${{ secrets.VERCEL_ORG_ID }}" --prod
         env:

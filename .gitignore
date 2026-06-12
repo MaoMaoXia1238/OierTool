@@ -20,9 +20,6 @@ node_modules/
 # 爬虫构建产物
 dist/
 
-# Prisma 迁移文件
-/web/prisma/migrations/
-
 # 测试覆盖率
 coverage/
 
