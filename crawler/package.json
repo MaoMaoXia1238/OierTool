@@ -1,0 +1,18 @@
+{
+  "_comment": "竞赛数据爬虫模块。公共开发工具移至根级 package.json。",
+  "name": "oier-tool-crawler",
+  "version": "1.0.0",
+  "description": "OierTool 竞赛数据爬虫模块",
+  "private": true,
+  "scripts": {
+    "crawl": "tsx --env-file=.env crawl-once.ts",
+    "test": "vitest",
+    "prisma:generate": "prisma generate"
+  },
+  "dependencies": {
+    "@prisma/client": "^7.8.0",
+    "axios": "^1.0.0",
+    "node-cron": "^3.0.0",
+    "playwright": "^1.0.0"
+  }
+}

@@ -1,0 +1,18 @@
+/**
+ * 测试目录 TypeScript 编译配置
+ * 继承根级 tsconfig.base.json，为 tests/ 下所有测试文件统一解析 @/ 别名。
+ * @/ 映射到 ../web/，对应 web/tsconfig.json 中的 @/ → ./* 语义。
+ * 额外配置 JSX 支持以覆盖 React 组件测试（如 ContestCard.test.tsx）。
+ */
+{
+  "extends": "../tsconfig.base.json",
+  "compilerOptions": {
+    "lib": ["dom", "dom.iterable", "esnext"],
+    "jsx": "react-jsx",
+    "skipLibCheck": true,
+    "paths": {
+      "@/*": ["../web/*"]
+    }
+  },
+  "include": ["**/*.ts", "**/*.tsx"]
+}

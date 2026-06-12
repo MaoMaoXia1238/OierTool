@@ -1,0 +1,40 @@
+/**
+ * Prisma 数据库模型定义
+ * 定义竞赛数据的表结构和字段约束。
+ * 使用 PostgreSQL 作为数据库引擎。
+ */
+
+// Prisma Client 生成器
+generator client {
+  provider = "prisma-client"
+  output   = "../../prisma/generated"
+}
+
+// 数据源（PostgreSQL）
+// 连接字符串已迁移至 prisma.config.ts
+// 根据ai回答以下被注释的写法是prismav7的最新写法, 但实际使用时会报错
+datasource db {   
+  provider = "postgresql"
+}
+// 所以这里使用以下写法
+// datasource db {
+//   url      = env("DATABASE_URL")
+//   provider = "postgresql"
+// }
+
+// 竞赛信息表
+model Contest {
+  id        String   @id @default(cuid())   // 唯一 ID
+  name      String                          // 竞赛名称
+  platform  String                          // 平台（Codeforces / Luogu）
+  startTime DateTime                        // 开始时间
+  endTime   DateTime                        // 结束时间
+  duration  Int                             // 时长（分钟）
+  url       String?                         // 竞赛链接（可选）
+  createdAt DateTime @default(now())        // 记录创建时间
+  updatedAt DateTime @updatedAt             // 记录更新时间
+
+  @@index([platform])                       // 按平台筛选优化
+  @@index([startTime])                      // 按时间排序优化
+  @@map("contests")                         // 数据库表名
+}

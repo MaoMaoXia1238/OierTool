@@ -1,0 +1,13 @@
+/**
+ * 爬虫模块 TypeScript 编译配置
+ * 继承根级 tsconfig.base.json，输出到 dist/ 目录。
+ * rootDir 设为上级目录以包含 prisma/generated 中的生成文件。
+ */
+{
+  "extends": "../tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "dist",
+    "rootDir": ".."
+  },
+  "include": ["**/*.ts"]
+}

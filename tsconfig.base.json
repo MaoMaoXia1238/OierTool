@@ -1,0 +1,13 @@
+/**
+ * TypeScript 基础编译配置（所有模块继承此文件）
+ * 提取 web/ 和 crawler/ 的公共 compilerOptions，避免重复维护。
+ */
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "esModuleInterop": true,
+    "strict": true
+  }
+}

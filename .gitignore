@@ -1,0 +1,51 @@
+# 依赖
+node_modules/
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
+
+# 环境变量（含私密信息，不提交）
+.env*
+
+# Next.js 构建产物
+.next/
+/out/
+
+# 生产构建
+/build
+
+# 爬虫构建产物
+dist/
+
+# Prisma 迁移文件
+/web/prisma/migrations/
+
+# 测试覆盖率
+coverage/
+
+# 调试日志
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# Vercel 部署缓存
+.vercel
+
+# TypeScript 构建信息
+*.tsbuildinfo
+next-env.d.ts
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# 证书文件
+*.pem
