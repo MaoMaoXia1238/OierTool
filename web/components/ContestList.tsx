@@ -26,7 +26,7 @@ const GRID_COLS = "grid-cols-[4fr_1fr_1fr_1fr_0.8fr]";
 function Container({ children }: { children: React.ReactNode }) {
   return (
     <div className="overflow-x-auto rounded-xl border bg-card shadow-sm transition-all duration-300">
-      {children}
+      <div className="min-w-[640px]">{children}</div>
     </div>
   );
 }
@@ -93,6 +93,7 @@ export function ContestList({ contests, loading = false }: ContestListProps) {
   if (contests.length === 0) {
     return (
       <Container>
+        <TableHeader />
         <div className="flex flex-col items-center gap-3 py-20 text-center">
           <svg className="h-12 w-12 text-muted-foreground/30" fill="none" viewBox="0 0 24 24" strokeWidth={1} stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
