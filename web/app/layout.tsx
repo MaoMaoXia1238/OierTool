@@ -2,9 +2,12 @@
  * 根布局组件
  * 定义整个应用的 HTML 结构、字体加载和全局元数据。
  * 所有页面都会嵌套在此布局中渲染。
+ * 包含顶部导航栏（NavBar）和底部页脚（Footer）。
  */
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import Link from "next/link";
+import NavBar from "@/components/nav-bar";
 import "./globals.css";
 
 // 加载 Geist Sans 字体（无衬线）
@@ -35,7 +38,27 @@ export default function RootLayout({
       lang="zh-CN"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col">
+        <NavBar />
+        <main className="flex-1">{children}</main>
+        <footer className="border-t py-8 text-center text-sm text-muted-foreground">
+          <div className="mx-auto max-w-6xl px-4 sm:px-6">
+            <p>OierTool</p>
+            <p className="mt-1">MIT License</p>
+            <div className="mt-2 flex items-center justify-center gap-4">
+              <Link
+                href="https://github.com/MaoMaoXia1238/OierTool"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hover:text-foreground transition-colors"
+              >
+                GitHub
+              </Link>
+              <span>Built with Next.js</span>
+            </div>
+          </div>
+        </footer>
+      </body>
     </html>
   );
 }
