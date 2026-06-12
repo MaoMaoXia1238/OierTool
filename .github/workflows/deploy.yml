@@ -1,0 +1,77 @@
+# GitHub Actions CI/CD 工作流
+#
+# 触发条件：
+#   - 推送 main 分支 → 执行 CI（测试） + CD（部署至 Vercel）
+#   - 推送 PR 到 main → 仅执行 CI（测试）
+#
+# 前置准备（GitHub Secrets，在 GitHub 仓库 Settings → Secrets and variables → Actions 中添加）：
+#   1. VERCEL_TOKEN       - 在 Vercel Dashboard → Settings → Tokens → Create Token 生成
+#   2. VERCEL_ORG_ID      - 运行 `npx vercel whoami` 查看你的 Vercel 用户名
+#   3. VERCEL_PROJECT_ID  - 在 Vercel 项目 Dashboard → Settings → Project ID 获取
+
+name: CI/CD
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  # ─────────────────── CI：测试 ───────────────────
+  test:
+    name: 测试
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 安装 Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "npm"
+
+      - name: 安装依赖
+        run: npm ci
+
+      - name: TypeScript 类型检查（Web）
+        run: npx -w web tsc --noEmit
+
+      - name: 运行单元测试（Web）
+        run: npx -w web vitest run
+
+      - name: 运行单元测试（Crawler）
+        run: npx -w crawler vitest run
+
+  # ─────────────────── CD：部署到 Vercel ───────────────────
+  deploy:
+    name: 部署到 Vercel
+    # 仅在推送 main 时部署，PR 不部署
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 安装 Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "npm"
+
+      - name: 安装依赖
+        run: npm ci
+
+      - name: 部署到 Vercel
+        run: |
+          npx vercel deploy \
+            --token="${{ secrets.VERCEL_TOKEN }}" \
+            --scope="${{ secrets.VERCEL_ORG_ID }}" \
+            --prod
+        env:
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
