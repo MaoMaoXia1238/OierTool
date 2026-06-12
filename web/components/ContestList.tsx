@@ -4,6 +4,8 @@
  * - 加载中：显示骨架加载提示
  * - 空数据：显示「暂无比赛」
  * - 正常数据：渲染竞赛表格（窄屏横向滚动）
+ *
+ * 所有状态使用统一的外层容器，避免状态切换时布局跳跃。
  */
 import { type ContestData } from "@/components/ContestCard";
 import { getPlatformLogo } from "@/lib/platforms";
@@ -19,6 +21,15 @@ export interface ContestListProps {
 
 /** 表格列宽 */
 const GRID_COLS = "grid-cols-[4fr_1fr_1fr_1fr_0.8fr]";
+
+/** 统一外层容器（所有状态共用，防止布局偏移） */
+function Container({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="overflow-x-auto rounded-xl border bg-card shadow-sm transition-all duration-300">
+      {children}
+    </div>
+  );
+}
 
 /** 表头行 */
 function TableHeader() {
@@ -59,7 +70,7 @@ export function ContestList({ contests, loading = false }: ContestListProps) {
   // 加载状态
   if (loading) {
     return (
-      <div className="rounded-xl border bg-card shadow-sm">
+      <Container>
         <TableHeader />
         <div className="animate-pulse space-y-4 p-6">
           <p className="sr-only">加载中...</p>
@@ -74,111 +85,106 @@ export function ContestList({ contests, loading = false }: ContestListProps) {
             </div>
           ))}
         </div>
-      </div>
+      </Container>
     );
   }
 
   // 空数据状态
   if (contests.length === 0) {
     return (
-      <div className="overflow-x-auto rounded-xl border bg-card shadow-sm">
-        <div className="min-w-[800px]">
-          <TableHeader />
-          <div className="flex flex-col items-center gap-3 py-20 text-center">
-            <svg className="h-12 w-12 text-muted-foreground/30" fill="none" viewBox="0 0 24 24" strokeWidth={1} stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
-            </svg>
-            <p className="text-sm font-medium text-muted-foreground">暂无比赛</p>
-            <p className="text-xs text-muted-foreground/60">爬虫定时更新，请稍后查看</p>
-          </div>
+      <Container>
+        <div className="flex flex-col items-center gap-3 py-20 text-center">
+          <svg className="h-12 w-12 text-muted-foreground/30" fill="none" viewBox="0 0 24 24" strokeWidth={1} stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
+          </svg>
+          <p className="text-sm font-medium text-muted-foreground">暂无比赛</p>
+          <p className="text-xs text-muted-foreground/60">爬虫定时更新，请稍后查看</p>
         </div>
-      </div>
+      </Container>
     );
   }
 
   // 正常渲染
   return (
-    <div className="overflow-x-auto rounded-xl border bg-card shadow-sm">
-      <div>
-        <TableHeader />
+    <Container>
+      <TableHeader />
 
-        <div className="divide-y">
-          {contests.map((contest) => {
-            const logoSrc = getPlatformLogo(contest.platform);
-            const countdown = getCountdown(contest.startTime);
+      <div className="divide-y">
+        {contests.map((contest) => {
+          const logoSrc = getPlatformLogo(contest.platform);
+          const countdown = getCountdown(contest.startTime);
 
-            return (
-              <div
-                key={contest.id}
-                className={
-                  "group flex flex-col gap-2 px-4 py-3 transition-colors hover:bg-muted/30 sm:grid sm:items-center sm:gap-0 sm:px-6 sm:py-4 " +
-                  GRID_COLS
-                }
-              >
-                {/* 比赛信息（名称 + 平台） */}
-                <div className="flex items-center gap-3 min-w-0">
-                  <LogoCell src={logoSrc} platform={contest.platform} />
-                  <div className="min-w-0">
-                    <div className="group relative w-fit max-w-full">
-                      <div className="truncate text-sm font-semibold">
-                        {contest.name}
-                      </div>
-                      <div className="pointer-events-none absolute bottom-full left-0 mb-1 hidden w-max max-w-xs rounded-lg border bg-popover px-3 py-2 text-sm text-popover-foreground shadow-md group-hover:block z-10" aria-hidden="true">
-                        {contest.name}
-                      </div>
+          return (
+            <div
+              key={contest.id}
+              className={
+                "group flex flex-col gap-2 px-4 py-3 transition-colors hover:bg-muted/30 sm:grid sm:items-center sm:gap-0 sm:px-6 sm:py-4 " +
+                GRID_COLS
+              }
+            >
+              {/* 比赛信息（名称 + 平台） */}
+              <div className="flex items-center gap-3 min-w-0">
+                <LogoCell src={logoSrc} platform={contest.platform} />
+                <div className="min-w-0">
+                  <div className="group relative w-fit max-w-full">
+                    <div className="truncate text-sm font-semibold">
+                      {contest.name}
+                    </div>
+                    <div className="pointer-events-none absolute bottom-full left-0 mb-1 hidden w-max max-w-xs rounded-lg border bg-popover px-3 py-2 text-sm text-popover-foreground shadow-md group-hover:block z-10" aria-hidden="true">
+                      {contest.name}
                     </div>
                   </div>
                 </div>
+              </div>
 
-                {/* 时间 */}
-                <div className="hidden text-center text-sm text-muted-foreground sm:block">
-                  {formatStartTime(contest.startTime)}
-                </div>
+              {/* 时间 */}
+              <div className="hidden text-center text-sm text-muted-foreground sm:block">
+                {formatStartTime(contest.startTime)}
+              </div>
 
-                {/* 时长 */}
-                <div className="hidden text-center text-sm text-muted-foreground sm:block">
-                  {formatDuration(contest.duration)}
-                </div>
+              {/* 时长 */}
+              <div className="hidden text-center text-sm text-muted-foreground sm:block">
+                {formatDuration(contest.duration)}
+              </div>
 
-                {/* 倒计时 */}
-                <div className="hidden sm:flex sm:items-center sm:justify-center">
-                  <span
-                    className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold whitespace-nowrap ${getCountdownColor(countdown.severity)}`}
-                  >
-                    {countdown.severity !== "normal" && (
-                      <span className="mr-1 h-1.5 w-1.5 rounded-full bg-current" />
-                    )}
+              {/* 倒计时 */}
+              <div className="hidden sm:flex sm:items-center sm:justify-center">
+                <span
+                  className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold whitespace-nowrap ${getCountdownColor(countdown.severity)}`}
+                >
+                  {countdown.severity !== "normal" && (
+                    <span className="mr-1 h-1.5 w-1.5 rounded-full bg-current" />
+                  )}
+                  {countdown.text}
+                </span>
+              </div>
+
+              {/* 操作按钮 */}
+              <div className="flex items-center justify-center gap-2">
+                <a href={contest.url} target="_blank" rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 rounded-lg border px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:border-primary hover:text-primary">
+                  参赛
+                  <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
+                  </svg>
+                </a>
+
+                {/* 移动端 */}
+                <div className="ml-auto flex items-center gap-3 text-xs sm:hidden">
+                  <span className="text-muted-foreground">{formatStartTime(contest.startTime)}</span>
+                  <span className={
+                    countdown.severity === "danger" ? "font-semibold text-red-600" :
+                    countdown.severity === "warning" ? "font-semibold text-yellow-600" :
+                    "font-medium text-primary"
+                  }>
                     {countdown.text}
                   </span>
                 </div>
-
-                {/* 操作按钮 */}
-                <div className="flex items-center justify-center gap-2">
-                  <a href={contest.url} target="_blank" rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 rounded-lg border px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:border-primary hover:text-primary">
-                    参赛
-                    <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
-                    </svg>
-                  </a>
-
-                  {/* 移动端 */}
-                  <div className="ml-auto flex items-center gap-3 text-xs sm:hidden">
-                    <span className="text-muted-foreground">{formatStartTime(contest.startTime)}</span>
-                    <span className={
-                      countdown.severity === "danger" ? "font-semibold text-red-600" :
-                      countdown.severity === "warning" ? "font-semibold text-yellow-600" :
-                      "font-medium text-primary"
-                    }>
-                      {countdown.text}
-                    </span>
-                  </div>
-                </div>
               </div>
-            );
-          })}
-        </div>
+            </div>
+          );
+        })}
       </div>
-    </div>
+    </Container>
   );
 }
