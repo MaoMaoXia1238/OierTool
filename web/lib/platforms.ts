@@ -14,6 +14,8 @@ export const PLATFORM_LOGOS: Record<string, string> = {
   NowCoder: "/logos/nowcoder.svg",
   /** AtCoder 平台 Logo */
   AtCoder: "/logos/atcoder.svg",
+  /** LeetCode 平台 Logo */
+  LeetCode: "/logos/leetcode.svg",
 };
 
 /**
