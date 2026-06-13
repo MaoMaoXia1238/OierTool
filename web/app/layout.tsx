@@ -8,6 +8,8 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import Link from "next/link";
 import NavBar from "@/components/nav-bar";
+import { Analytics } from "@vercel/analytics/next";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import "./globals.css";
 
 // 加载 Geist Sans 字体（无衬线）
@@ -41,6 +43,8 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col">
         <NavBar />
         <main className="flex-1">{children}</main>
+        <Analytics />
+        <SpeedInsights />
         <footer className="border-t py-8 text-center text-sm text-muted-foreground">
           <div className="mx-auto max-w-6xl px-4 sm:px-6">
             <p className="font-medium">OierTool</p>
