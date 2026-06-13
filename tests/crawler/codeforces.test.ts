@@ -59,14 +59,14 @@ const mockApiData: CfApiContest[] = [
     name: "Order Capital Round 2 (Codeforces Round, Div. 1 + Div. 2)",
     phase: "BEFORE",
     durationSeconds: 10800,
-    startTimeSeconds: 1781793300,
+    startTimeSeconds: 1790000000, // ~2026-09-21
   },
   {
     id: 2236,
     name: "Codeforces Round 1103 (Div. 3)",
     phase: "BEFORE",
     durationSeconds: 9000,
-    startTimeSeconds: 1781274900,
+    startTimeSeconds: 1785000000, // ~2026-07-25 → 早于上面那场
   },
   {
     id: 2233,

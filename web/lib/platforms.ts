@@ -12,6 +12,10 @@ export const PLATFORM_LOGOS: Record<string, string> = {
   Luogu: "/logos/luogu.svg",
   /** NowCoder（牛客）平台 Logo */
   NowCoder: "/logos/nowcoder.svg",
+  /** AtCoder 平台 Logo */
+  AtCoder: "/logos/atcoder.svg",
+  /** LeetCode 平台 Logo */
+  LeetCode: "/logos/leetcode.svg",
 };
 
 /**
