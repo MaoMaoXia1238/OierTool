@@ -43,8 +43,13 @@ export default function RootLayout({
         <main className="flex-1">{children}</main>
         <footer className="border-t py-8 text-center text-sm text-muted-foreground">
           <div className="mx-auto max-w-6xl px-4 sm:px-6">
-            <p>OierTool</p>
-            <p className="mt-1">MIT License</p>
+            <p className="font-medium">OierTool</p>
+            <p className="mt-1 text-xs text-muted-foreground/70">
+              算法竞赛选手的随身工具站
+            </p>
+            <p className="mt-2 text-xs text-muted-foreground/60">
+              MIT License · Built with Next.js &amp; PostgreSQL
+            </p>
             <div className="mt-2 flex items-center justify-center gap-4">
               <Link
                 href="https://github.com/MaoMaoXia1238/OierTool"
@@ -54,7 +59,7 @@ export default function RootLayout({
               >
                 GitHub
               </Link>
-              <span>Built with Next.js</span>
+              <span>Next.js 16 + Prisma 7</span>
             </div>
           </div>
         </footer>

@@ -8,7 +8,7 @@
  * 所有状态使用统一的外层容器，避免状态切换时布局跳跃。
  */
 import { type ContestData } from "@/components/ContestCard";
-import { getPlatformLogo } from "@/lib/platforms";
+import { getPlatformLogo, getLogoSizeClass } from "@/lib/platforms";
 import { formatDuration, formatStartTime, getCountdown, getCountdownColor, type Severity } from "@/lib/utils";
 
 /** ContestList 组件 Props */
@@ -46,13 +46,14 @@ function TableHeader() {
 
 /** Logo 容器（固定宽度，统一协调各平台 logo 比例差异） */
 function LogoCell({ src, platform }: { src?: string; platform: string }) {
+  const isLarge = getLogoSizeClass(platform) === "h-8 w-8";
   return (
-    <div className="flex h-10 w-20 shrink-0 items-center justify-center rounded-md border bg-muted/40 px-1.5">
+    <div className={`flex w-20 shrink-0 items-center justify-center rounded-md border bg-muted/40 px-1.5 ${isLarge ? "h-12" : "h-10"}`}>
       {src ? (
         <img
           src={src}
           alt={platform}
-          className="h-5 w-auto max-w-[68px] object-contain"
+          className={`${getLogoSizeClass(platform)} w-auto max-w-[68px] object-contain`}
         />
       ) : (
         <span className="text-[10px] font-bold text-muted-foreground">

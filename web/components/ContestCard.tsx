@@ -7,7 +7,7 @@
  * - 距离比赛开始的倒计时
  * - 跳转链接
  */
-import { getPlatformLogo } from "@/lib/platforms";
+import { getPlatformLogo, getLogoSizeClass } from "@/lib/platforms";
 import { formatDuration, formatStartTime, getCountdown } from "@/lib/utils";
 
 /** 单条比赛数据 */
@@ -42,7 +42,7 @@ export function ContestCard({ contest }: ContestCardProps) {
           <img
             src={logoSrc}
             alt={`${platform} Logo`}
-            className="h-6 w-6 object-contain"
+            className={`${getLogoSizeClass(platform)} object-contain`}
           />
         )}
         <span className="text-sm text-muted-foreground">{platform}</span>

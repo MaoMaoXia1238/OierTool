@@ -1,10 +1,8 @@
 /**
- * OierTool - 首页组件
+ * OierTool - 首页组件（服务端组件）
  * 产品首页，展示品牌标识、数据统计、功能特性和竞赛日历入口。
  * 深色主题风格，使用 shadcn/ui CSS 变量，引导用户探索竞赛日历功能。
  */
-"use client";
-
 import Link from "next/link";
 
 /** 功能特性列表 */
@@ -89,9 +87,9 @@ const FEATURES = [
 
 /** 数据统计项 */
 const STATS = [
-  { label: "已追踪平台", value: "Codeforces + Luogu" },
-  { label: "持续更新", value: "每日自动同步" },
-  { label: "开源免费", value: "MIT 协议" },
+  { label: "已追踪平台", value: "5 个主流 OJ" },
+  { label: "数据更新", value: "每日自动同步" },
+  { label: "开源协议", value: "MIT" },
 ] as const;
 
 /**
@@ -199,18 +197,6 @@ export default function Home() {
           ))}
         </div>
       </section>
-
-      {/* ===== 页脚 ===== */}
-      <footer className="w-full border-t border-border py-8 text-center">
-        <div className="mx-auto max-w-4xl px-4">
-          <p className="text-sm text-muted-foreground">
-            OierTool · 算法竞赛选手的随身工具站
-          </p>
-          <p className="mt-1 text-xs text-muted-foreground/60">
-            MIT License · Built with Next.js &amp; PostgreSQL
-          </p>
-        </div>
-      </footer>
     </div>
   );
 }

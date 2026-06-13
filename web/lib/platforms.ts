@@ -26,3 +26,17 @@ export const PLATFORM_LOGOS: Record<string, string> = {
 export function getPlatformLogo(platform: string): string | undefined {
   return PLATFORM_LOGOS[platform];
 }
+
+/**
+ * 需要放大显示的 Logo 平台列表
+ * 某些 SVG 内嵌留白大或宽高比特殊，在统一 24x24 容器中显得小
+ */
+const LARGE_LOGO_PLATFORMS = new Set(["AtCoder", "LeetCode"]);
+
+/**
+ * 获取平台 Logo 的尺寸类名
+ * AtCoder / LeetCode 的 Logo 默认留有较多空白或宽高比特殊，需放大显示
+ */
+export function getLogoSizeClass(platform: string): string {
+  return LARGE_LOGO_PLATFORMS.has(platform) ? "h-8 w-8" : "h-6 w-6";
+}
