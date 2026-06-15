@@ -4,21 +4,38 @@
  * 支持降级策略：未配置 SES 环境变量时，验证码打印到控制台。
  */
 import * as tencentcloud from "tencentcloud-sdk-nodejs-ses";
-import * as dotenv from "dotenv";
 import * as fs from "fs";
 import * as path from "path";
 
 const SesClient = tencentcloud.ses.v20201002.Client;
 
+// 简易 .env 解析器（避免引入外部依赖，确保 Vercel 构建可用）
+function parseEnv(content: string): Record<string, string> {
+  const result: Record<string, string> = {};
+  for (const line of content.split("\n")) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith("#")) continue;
+    const eqIndex = trimmed.indexOf("=");
+    if (eqIndex === -1) continue;
+    const key = trimmed.slice(0, eqIndex).trim();
+    let value = trimmed.slice(eqIndex + 1).trim();
+    // 去除引号
+    if ((value.startsWith('"') && value.endsWith('"')) ||
+        (value.startsWith("'") && value.endsWith("'"))) {
+      value = value.slice(1, -1);
+    }
+    result[key] = value;
+  }
+  return result;
+}
+
 // 直接从 .env 文件读取配置（绕过 Turbopack 编译时 process.env 被剥离的问题）
 function getEnvConfig() {
   // CWD 是 web/ workspace 目录，.env 在项目根即上级目录
   const envPath = path.resolve(process.cwd(), "..", ".env");
-
   if (!fs.existsSync(envPath)) return null;
-
   const content = fs.readFileSync(envPath, "utf-8");
-  const parsed = dotenv.parse(content);
+  const parsed = parseEnv(content);
 
   return {
     secretId: parsed.TENCENT_SECRET_ID || "",
