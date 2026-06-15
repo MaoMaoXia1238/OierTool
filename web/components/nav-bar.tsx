@@ -2,11 +2,14 @@
  * 顶部导航栏组件
  * 包含 Logo 和主导航链接，支持当前页面高亮显示。
  * 使用 sticky 固定在页面顶部，带有毛玻璃背景效果。
+ * 支持登录/未登录两种状态的 UI。
  */
 "use client";
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import type { Session } from "next-auth";
+import UserMenu from "./user-menu";
 
 const navLinks = [
   { href: "/", label: "首页" },
@@ -14,7 +17,11 @@ const navLinks = [
   { href: "/docs", label: "API 文档" },
 ];
 
-export default function NavBar() {
+interface NavBarProps {
+  session: Session | null;
+}
+
+export default function NavBar({ session }: NavBarProps) {
   const pathname = usePathname();
 
   return (
@@ -29,7 +36,7 @@ export default function NavBar() {
         </Link>
 
         {/* 右侧导航链接 */}
-        <nav className="flex items-center gap-6">
+        <nav className="flex items-center gap-4">
           {navLinks.map(({ href, label }) => {
             const isActive = pathname === href;
             return (
@@ -46,6 +53,18 @@ export default function NavBar() {
               </Link>
             );
           })}
+
+          {/* 登录/用户菜单 */}
+          {session?.user ? (
+            <UserMenu session={session} />
+          ) : (
+            <Link
+              href="/auth/signin"
+              className="inline-flex items-center rounded-lg border px-3 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:border-primary hover:text-foreground"
+            >
+              登录
+            </Link>
+          )}
 
           {/* GitHub 外链按钮 */}
           <a

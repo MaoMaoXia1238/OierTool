@@ -16,11 +16,6 @@ generator client {
 datasource db {   
   provider = "postgresql"
 }
-// 所以这里使用以下写法
-// datasource db {
-//   url      = env("DATABASE_URL")
-//   provider = "postgresql"
-// }
 
 // 竞赛信息表
 model Contest {
@@ -37,4 +32,58 @@ model Contest {
   @@index([platform])                       // 按平台筛选优化
   @@index([startTime])                      // 按时间排序优化
   @@map("contests")                         // 数据库表名
+}
+
+// 用户表 — Auth.js v5 认证
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique                                      // 邮箱唯一
+  emailVerified DateTime?                                              // 邮箱验证时间（预留）
+  image         String?                                                // 头像 URL（预留）
+  password      String?                                                // bcrypt 哈希后的密码
+  role          String    @default("USER")                             // USER | ADMIN（预留）
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  accounts      Account[]
+  sessions      Session[]
+  @@map("users")
+}
+
+// OAuth 账户关联表 — 预留 Google/GitHub 等第三方登录
+model Account {
+  id                String  @id @default(cuid())
+  userId            String  @map("user_id")
+  type              String                                             // oauth / credentials
+  provider          String                                             // google / github / ...
+  providerAccountId String  @map("provider_account_id")
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+// 会话表 — 数据库 Session 策略（当前使用 JWT，此表预留）
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique @map("session_token")
+  userId       String   @map("user_id")
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@map("sessions")
+}
+
+// 邮箱验证 Token 表 — 预留邮箱验证功能
+model VerificationToken {
+  identifier String
+  token      String
+  expires    DateTime
+  @@unique([identifier, token])
+  @@map("verification_tokens")
 }

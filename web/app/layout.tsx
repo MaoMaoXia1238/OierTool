@@ -3,6 +3,7 @@
  * 定义整个应用的 HTML 结构、字体加载和全局元数据。
  * 所有页面都会嵌套在此布局中渲染。
  * 包含顶部导航栏（NavBar）和底部页脚（Footer）。
+ * 在服务端获取 session 并传递给 NavBar。
  */
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
@@ -10,6 +11,7 @@ import Link from "next/link";
 import NavBar from "@/components/nav-bar";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
+import { auth } from "@/auth";
 import "./globals.css";
 
 // 加载 Geist Sans 字体（无衬线）
@@ -30,18 +32,20 @@ export const metadata: Metadata = {
   description: "算法竞赛选手工具站 - 竞赛日历、数据聚合",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const session = await auth();
+
   return (
     <html
       lang="zh-CN"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
-        <NavBar />
+        <NavBar session={session} />
         <main className="flex-1">{children}</main>
         <Analytics />
         <SpeedInsights />
