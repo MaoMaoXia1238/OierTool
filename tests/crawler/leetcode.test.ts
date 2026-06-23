@@ -3,7 +3,7 @@
  * 验证 parseLeetCodeContests 函数对 GraphQL API 响应的解析正确性。
  * 使用 fixture 文件（保存的 leetcode.json）模拟 API 响应数据。
  */
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { readFileSync } from "fs";
 import { resolve } from "path";
 import { parseLeetCodeContests } from "../../crawler/spiders/leetcode";
@@ -16,6 +16,16 @@ const raw = readFileSync(
 const data = JSON.parse(raw);
 
 describe("parseLeetCodeContests", () => {
+  // 固定系统时间为 fixture 数据中所有比赛尚未开始的日期（2026-05-01）
+  // 避免 fixture 中静态时间戳随真实时间推移而全部过期
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-05-01T00:00:00Z"));
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
   it("应返回一个数组", () => {
     const result = parseLeetCodeContests(data);
     expect(Array.isArray(result)).toBe(true);
