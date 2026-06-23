@@ -37,11 +37,18 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 检查用户是否存在
+    // 检查用户是否存在（用于区分登录验证码 vs 注册重发）
     const user = await prisma.user.findUnique({
       where: { email },
     });
-    if (!user) {
+
+    // 获取该邮箱已有的 VerificationToken（可能包含待注册数据）
+    const existingToken = await prisma.verificationToken.findFirst({
+      where: { identifier: email },
+    });
+
+    // 用户不存在且无待验证记录 → 拒绝
+    if (!user && !existingToken) {
       return NextResponse.json(
         { error: "该邮箱未注册" },
         { status: 404 }
@@ -49,7 +56,6 @@ export async function POST(request: NextRequest) {
     }
 
     // ② 5 分钟冷却检查
-    // 利用 expires = createdAt + 10min 反推创建时间
     const recentToken = await prisma.verificationToken.findFirst({
       where: {
         identifier: email,
@@ -75,11 +81,13 @@ export async function POST(request: NextRequest) {
     const code = generateCode();
 
     // 存入 VerificationToken（10 分钟有效）
+    // 如果是注册重发，保留 pendingData
     await prisma.verificationToken.create({
       data: {
         identifier: email,
         token: code,
         expires: new Date(Date.now() + 10 * 60 * 1000),
+        pendingData: existingToken?.pendingData ?? null,
       },
     });
 

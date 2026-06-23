@@ -79,11 +79,13 @@ model Session {
   @@map("sessions")
 }
 
-// 邮箱验证 Token 表 — 预留邮箱验证功能
+// 邮箱验证 Token 表 — 邮箱验证 + 注册暂存
+// pendingData: 注册验证时暂存用户数据（JSON: { password, name }），登录验证码时为 null
 model VerificationToken {
-  identifier String
-  token      String
-  expires    DateTime
+  identifier  String
+  token       String
+  expires     DateTime
+  pendingData String?  @db.Text  // 待注册用户的 bcrypt 密码 + 用户名（JSON）
   @@unique([identifier, token])
   @@map("verification_tokens")
 }

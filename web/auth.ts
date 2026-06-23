@@ -74,6 +74,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
         // 密码登录（默认，兼容旧格式无 loginType 的情况）
         if (!user.password) return null;
+        if (!user.emailVerified) return null;  // 未验证邮箱禁止登录
         if (!password) return null;
 
         const isValid = await bcrypt.compare(password, user.password);

@@ -74,7 +74,7 @@ export async function POST(request: NextRequest) {
     // bcrypt 哈希密码（12 轮）
     const hashedPassword = await bcrypt.hash(password, 12);
 
-    // ④ 生成验证码并发送邮件（先发邮件，成功后再创建用户）
+    // ④ 生成验证码并发送邮件（先发邮件，成功后再暂存注册数据）
     const code = generateCode();
     const sent = await sendVerificationCode(email, code);
     if (!sent) {
@@ -84,28 +84,29 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 存入 VerificationToken 表（10 分钟有效）
+    // 删除该邮箱旧的待验证记录
+    await prisma.verificationToken.deleteMany({
+      where: { identifier: email },
+    });
+
+    // 存入 VerificationToken（10 分钟有效），暂存注册数据
+    // 用户不在此时创建，等邮箱验证通过后由 verify-email API 创建
     await prisma.verificationToken.create({
       data: {
         identifier: email,
         token: code,
         expires: new Date(Date.now() + 10 * 60 * 1000),
-      },
-    });
-
-    // ⑤ 邮件发送成功后创建用户
-    const user = await prisma.user.create({
-      data: {
-        email,
-        password: hashedPassword,
-        name: name ?? email.split("@")[0],
+        pendingData: JSON.stringify({
+          password: hashedPassword,
+          name: name ?? email.split("@")[0],
+        }),
       },
     });
 
     return NextResponse.json(
       {
         message: "注册成功，请查收验证码邮件",
-        email: user.email,
+        email,
       },
       { status: 201 }
     );

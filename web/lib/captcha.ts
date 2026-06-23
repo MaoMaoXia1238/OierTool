@@ -5,8 +5,16 @@
  */
 import crypto from "crypto";
 
-// 内存缓存：captchaId → { answer, expires }
-const captchaStore = new Map<string, { answer: string; expires: number }>();
+// 内存缓存（挂载到 globalThis 确保 Turbopack 下跨路由共享）
+// Turbopack 会为不同路由 handler 创建独立的模块实例，
+// 普通 module-level Map 会不共享导致验证码永远校验失败
+const globalCaptcha = globalThis as typeof globalThis & {
+  __captchaStore?: Map<string, { answer: string; expires: number }>;
+};
+if (!globalCaptcha.__captchaStore) {
+  globalCaptcha.__captchaStore = new Map();
+}
+const captchaStore = globalCaptcha.__captchaStore;
 
 // 验证码字符集（去除了易混淆的 0O1lI）
 const CHARS = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ";

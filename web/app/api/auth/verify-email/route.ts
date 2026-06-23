@@ -60,12 +60,36 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 验证通过：更新用户 emailVerified，删除 token
-    await prisma.user.update({
-      where: { email },
-      data: { emailVerified: new Date() },
-    });
+    // 验证通过：读取暂存的注册数据，创建用户
+    let pendingData: { password: string; name: string } | null = null;
+    if (token.pendingData) {
+      try {
+        pendingData = JSON.parse(token.pendingData);
+      } catch {
+        // pendingData 格式异常，降级处理
+      }
+    }
 
+    // 只有注册验证流程（有 pendingData）才创建用户
+    // 登录验证码流程（无 pendingData）仅做 token 校验，不创建用户
+    if (pendingData && pendingData.password) {
+      await prisma.user.create({
+        data: {
+          email,
+          password: pendingData.password,
+          name: pendingData.name,
+          emailVerified: new Date(),
+        },
+      });
+    } else {
+      // 邮箱已注册但尚未验证的场景：仅更新 emailVerified
+      await prisma.user.update({
+        where: { email },
+        data: { emailVerified: new Date() },
+      });
+    }
+
+    // 删除已使用的 token
     await prisma.verificationToken.delete({
       where: {
         identifier_token: {
