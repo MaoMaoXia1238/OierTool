@@ -1,16 +1,19 @@
 /**
  * 发送验证码 API（供登录使用）
  * POST /api/auth/send-code
- * Body: { email: string }
- * 向指定邮箱发送 6 位验证码，用于验证码登录。
+ * Body: { email: string, captchaId: string, captchaAnswer: string }
+ * 先校验图形验证码 → 检查5分钟冷却 → 发送邮箱验证码。
  */
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { sendVerificationCode, generateCode } from "@/lib/email";
+import { verifyCaptcha } from "@/lib/captcha";
 
 const sendCodeSchema = z.object({
   email: z.string().email("请输入有效的邮箱地址"),
+  captchaId: z.string().min(1, "图形验证码ID不能为空"),
+  captchaAnswer: z.string().length(4, "图形验证码为 4 位"),
 });
 
 export async function POST(request: NextRequest) {
@@ -24,7 +27,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { email } = parsed.data;
+    const { email, captchaId, captchaAnswer } = parsed.data;
+
+    // ① 校验图形验证码
+    if (!verifyCaptcha(captchaId, captchaAnswer)) {
+      return NextResponse.json(
+        { error: "图形验证码错误或已过期" },
+        { status: 400 }
+      );
+    }
 
     // 检查用户是否存在
     const user = await prisma.user.findUnique({
@@ -34,6 +45,24 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { error: "该邮箱未注册" },
         { status: 404 }
+      );
+    }
+
+    // ② 5 分钟冷却检查
+    // 利用 expires = createdAt + 10min 反推创建时间
+    const recentToken = await prisma.verificationToken.findFirst({
+      where: {
+        identifier: email,
+        expires: { gt: new Date(Date.now() + 5 * 60 * 1000) },
+      },
+    });
+    if (recentToken) {
+      const waitSeconds = Math.ceil(
+        (recentToken.expires.getTime() - Date.now() - 5 * 60 * 1000) / 1000
+      );
+      return NextResponse.json(
+        { error: `请等待 ${waitSeconds} 秒后再试` },
+        { status: 429 }
       );
     }
 

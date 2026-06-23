@@ -1,18 +1,21 @@
 /**
  * 注册表单组件（客户端组件）
- * 提供邮箱 + 密码 + 用户名注册表单，调用 /api/auth/register API。
+ * 提供邮箱 + 密码 + 用户名 + 图形验证码注册表单，调用 /api/auth/register API。
  * 含前端校验、加载状态和错误提示。
  */
 "use client";
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import CaptchaInput from "@/components/CaptchaInput";
 
 export default function RegisterForm() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
+  const [captchaId, setCaptchaId] = useState("");
+  const [captchaAnswer, setCaptchaAnswer] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -29,6 +32,10 @@ export default function RegisterForm() {
       setError("密码至少 8 个字符");
       return;
     }
+    if (!captchaAnswer || captchaAnswer.length < 4) {
+      setError("请输入图形验证码");
+      return;
+    }
 
     setLoading(true);
 
@@ -36,7 +43,13 @@ export default function RegisterForm() {
       const res = await fetch("/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password, name: name || undefined }),
+        body: JSON.stringify({
+          email,
+          password,
+          name: name || undefined,
+          captchaId,
+          captchaAnswer,
+        }),
       });
 
       const data = await res.json();
@@ -44,7 +57,6 @@ export default function RegisterForm() {
       if (!res.ok) {
         setError(data.error || "注册失败");
       } else {
-        // 注册成功，跳转到登录页
         router.push("/auth/verify?email=" + encodeURIComponent(email));
       }
     } catch {
@@ -56,7 +68,6 @@ export default function RegisterForm() {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      {/* 用户名输入（可选） */}
       <div>
         <label htmlFor="name" className="block text-sm font-medium mb-1.5">
           用户名 <span className="text-muted-foreground text-xs">（可选）</span>
@@ -72,7 +83,6 @@ export default function RegisterForm() {
         />
       </div>
 
-      {/* 邮箱输入 */}
       <div>
         <label htmlFor="email" className="block text-sm font-medium mb-1.5">
           邮箱
@@ -88,7 +98,6 @@ export default function RegisterForm() {
         />
       </div>
 
-      {/* 密码输入 */}
       <div>
         <label htmlFor="password" className="block text-sm font-medium mb-1.5">
           密码
@@ -104,14 +113,18 @@ export default function RegisterForm() {
         />
       </div>
 
-      {/* 错误提示 */}
+      {/* 图形验证码 */}
+      <CaptchaInput
+        onCaptchaReady={setCaptchaId}
+        onAnswerChange={setCaptchaAnswer}
+      />
+
       {error && (
         <p className="text-sm text-destructive bg-destructive/10 rounded-lg px-3 py-2">
           {error}
         </p>
       )}
 
-      {/* 提交按钮 */}
       <button
         type="submit"
         disabled={loading}

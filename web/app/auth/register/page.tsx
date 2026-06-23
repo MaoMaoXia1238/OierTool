@@ -12,12 +12,14 @@ export default async function RegisterPage() {
   if (session?.user) redirect("/");
 
   return (
-    <div className="mx-auto max-w-md px-4 py-16">
+    <div className="mx-auto max-w-md px-4 py-20">
       <h1 className="text-2xl font-bold text-center mb-8">注册 OierTool</h1>
-      <RegisterForm />
+      <div className="rounded-2xl border bg-card p-8 shadow-lg shadow-black/5">
+        <RegisterForm />
+      </div>
       <p className="text-center text-sm text-muted-foreground mt-6">
         已有账号？
-        <a href="/auth/signin" className="text-primary hover:underline ml-1">
+        <a href="/auth/signin" className="text-primary hover:underline ml-1 font-medium">
           立即登录
         </a>
       </p>

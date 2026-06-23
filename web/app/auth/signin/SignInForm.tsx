@@ -8,6 +8,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
+import CaptchaInput from "@/components/CaptchaInput";
 
 type LoginTab = "password" | "code";
 
@@ -24,6 +25,8 @@ export default function SignInForm() {
   const [code, setCode] = useState("");
   const [codeTimer, setCodeTimer] = useState(0);
   const [sendingCode, setSendingCode] = useState(false);
+  const [captchaId, setCaptchaId] = useState("");
+  const [captchaAnswer, setCaptchaAnswer] = useState("");
 
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -76,6 +79,10 @@ export default function SignInForm() {
   // 发送验证码
   async function handleSendCode() {
     if (!codeEmail || codeTimer > 0) return;
+    if (!captchaAnswer || captchaAnswer.length < 4) {
+      setError("请输入图形验证码");
+      return;
+    }
     setSendingCode(true);
     setError("");
 
@@ -83,7 +90,7 @@ export default function SignInForm() {
       const res = await fetch("/api/auth/send-code", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: codeEmail }),
+        body: JSON.stringify({ email: codeEmail, captchaId, captchaAnswer }),
       });
 
       if (res.ok) {
@@ -219,12 +226,19 @@ export default function SignInForm() {
               onChange={(e) => setCodeEmail(e.target.value)}
               placeholder="your@email.com"
               autoComplete="email"
-              className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring transition-shadow"
+              className="w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring transition-shadow"
             />
           </div>
+
+          {/* 图形验证码（移到验证码上方） */}
+          <CaptchaInput
+            onCaptchaReady={setCaptchaId}
+            onAnswerChange={setCaptchaAnswer}
+          />
+
           <div>
             <label htmlFor="login-code" className="block text-sm font-medium mb-1.5">
-              验证码
+              邮箱验证码
             </label>
             <div className="flex gap-2">
               <input
@@ -236,13 +250,13 @@ export default function SignInForm() {
                 onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
                 placeholder="000000"
                 autoComplete="one-time-code"
-                className="flex-1 rounded-lg border border-border bg-background px-3 py-2 text-center text-lg tracking-[0.3em] font-mono focus:outline-none focus:ring-2 focus:ring-ring transition-shadow"
+                className="flex-1 rounded-lg border border-border bg-background px-3 py-2.5 text-center text-sm font-mono tracking-[0.2em] focus:outline-none focus:ring-2 focus:ring-ring transition-shadow"
               />
               <button
                 type="button"
                 onClick={handleSendCode}
                 disabled={codeTimer > 0 || sendingCode}
-                className="shrink-0 rounded-lg border px-4 py-2 text-sm text-muted-foreground hover:text-foreground hover:border-primary transition-colors disabled:opacity-50"
+                className="shrink-0 rounded-lg border px-4 py-2.5 text-sm text-muted-foreground hover:text-foreground hover:border-primary transition-colors disabled:opacity-50"
               >
                 {sendingCode
                   ? "发送中..."
@@ -252,6 +266,7 @@ export default function SignInForm() {
               </button>
             </div>
           </div>
+
           <button
             type="submit"
             disabled={loading}

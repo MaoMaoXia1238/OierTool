@@ -1,20 +1,23 @@
 /**
  * 用户注册 API
  * POST /api/auth/register
- * Body: { email: string, password: string, name?: string }
- * 创建用户（未验证状态）并发送邮箱验证码。
+ * Body: { email, password, name?, captchaId, captchaAnswer }
+ * 校验图形验证码 → 查重 → 冷却检查 → 先发邮件 → 成功后创建用户。
  */
 import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { sendVerificationCode, generateCode } from "@/lib/email";
+import { verifyCaptcha } from "@/lib/captcha";
 
 // 注册输入验证 schema
 const registerSchema = z.object({
   email: z.string().email("请输入有效的邮箱地址"),
   password: z.string().min(8, "密码至少 8 个字符"),
   name: z.string().min(1, "请输入用户名").optional(),
+  captchaId: z.string().min(1, "图形验证码ID不能为空"),
+  captchaAnswer: z.string().length(4, "图形验证码为 4 位"),
 });
 
 export async function POST(request: NextRequest) {
@@ -30,9 +33,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { email, password, name } = parsed.data;
+    const { email, password, name, captchaId, captchaAnswer } = parsed.data;
 
-    // 检查邮箱是否已注册
+    // ① 校验图形验证码
+    if (!verifyCaptcha(captchaId, captchaAnswer)) {
+      return NextResponse.json(
+        { error: "图形验证码错误或已过期" },
+        { status: 400 }
+      );
+    }
+
+    // ② 检查邮箱是否已注册
     const existingUser = await prisma.user.findUnique({
       where: { email },
     });
@@ -43,20 +54,35 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // ③ 5 分钟冷却检查
+    const recentToken = await prisma.verificationToken.findFirst({
+      where: {
+        identifier: email,
+        expires: { gt: new Date(Date.now() + 5 * 60 * 1000) },
+      },
+    });
+    if (recentToken) {
+      const waitSeconds = Math.ceil(
+        (recentToken.expires.getTime() - Date.now() - 5 * 60 * 1000) / 1000
+      );
+      return NextResponse.json(
+        { error: `请等待 ${waitSeconds} 秒后再试` },
+        { status: 429 }
+      );
+    }
+
     // bcrypt 哈希密码（12 轮）
     const hashedPassword = await bcrypt.hash(password, 12);
 
-    // 创建用户（emailVerified 为 null，表示未验证）
-    const user = await prisma.user.create({
-      data: {
-        email,
-        password: hashedPassword,
-        name: name ?? email.split("@")[0],
-      },
-    });
-
-    // 生成 6 位数字验证码
+    // ④ 生成验证码并发送邮件（先发邮件，成功后再创建用户）
     const code = generateCode();
+    const sent = await sendVerificationCode(email, code);
+    if (!sent) {
+      return NextResponse.json(
+        { error: "验证码发送失败，请稍后再试" },
+        { status: 500 }
+      );
+    }
 
     // 存入 VerificationToken 表（10 分钟有效）
     await prisma.verificationToken.create({
@@ -67,8 +93,14 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    // 发送验证码邮件
-    await sendVerificationCode(email, code);
+    // ⑤ 邮件发送成功后创建用户
+    const user = await prisma.user.create({
+      data: {
+        email,
+        password: hashedPassword,
+        name: name ?? email.split("@")[0],
+      },
+    });
 
     return NextResponse.json(
       {
