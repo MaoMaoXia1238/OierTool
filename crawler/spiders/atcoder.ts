@@ -69,6 +69,9 @@ export function parseAtCoderContests(html: string): AtCoderContest[] {
     // 验证日期有效
     if (isNaN(startTime.getTime())) return;
 
+    // 跳过 AtCoder 每日练习场次（如 "AtCoder Daily Training EASY 2026/08/05 16:00 start"）
+    if (rawName.startsWith("AtCoder Daily Training")) return;
+
     const duration = parseDuration(durationText);
     const endTime = new Date(startTime.getTime() + duration * 60 * 1000);
 

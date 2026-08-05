@@ -3,7 +3,7 @@
  * 验证 fetchCodeforcesContests 对 API 返回数据的处理逻辑。
  * 由于 axios 动态导入 mock 存在问题，改为直接测试数据过滤和转换逻辑。
  */
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
 /**
  * API 原始响应的单条比赛
@@ -76,6 +76,16 @@ const mockApiData: CfApiContest[] = [
     startTimeSeconds: 1781015700,
   },
 ];
+
+beforeEach(() => {
+  // 固定系统时间，避免 mock 数据中的静态时间戳随真实时间推移过期
+  vi.useFakeTimers({ toFake: ["Date"] });
+  vi.setSystemTime(new Date("2026-04-01T00:00:00Z"));
+});
+
+afterEach(() => {
+  vi.useRealTimers();
+});
 
 describe("Codeforces API 数据转换逻辑", () => {
   it("应返回未开始的比赛数组", () => {

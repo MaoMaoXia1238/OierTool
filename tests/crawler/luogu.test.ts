@@ -3,7 +3,7 @@
  * 验证 parseLuoguFromHtml 函数对洛谷比赛页面 HTML 的解析正确性。
  * 使用 fixture 文件（包含 lentille-context JSON）模拟完整页面。
  */
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { readFileSync } from "fs";
 import { resolve } from "path";
 import { parseLuoguFromHtml } from "../../crawler/spiders/luogu";
@@ -13,6 +13,16 @@ const html = readFileSync(
   resolve(__dirname, "../fixtures/luogu.html"),
   "utf-8"
 );
+
+beforeEach(() => {
+  // 固定系统时间，避免 fixture 中的静态时间戳随真实时间推移过期
+  vi.useFakeTimers({ toFake: ["Date"] });
+  vi.setSystemTime(new Date("2026-04-01T00:00:00Z"));
+});
+
+afterEach(() => {
+  vi.useRealTimers();
+});
 
 describe("parseLuoguFromHtml", () => {
   it("应返回一个数组", () => {
