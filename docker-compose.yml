@@ -1,0 +1,71 @@
+# OierTool 自托管编排（web + crawler + db）
+# 用法: docker compose up -d --build
+# 与 Vercel 部署互不冲突：此编排用于国内服务器/本地自托管，可独立运行。
+#
+# 环境变量通过宿主机 .env 注入（docker compose 自动读取根目录 .env）：
+#   INTERNAL_API_SECRET / AUTH_SECRET / VAPID_PUBLIC_KEY / VAPID_PRIVATE_KEY / VAPID_SUBJECT
+
+services:
+  db:
+    image: postgres:18-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: oiertool
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d oiertool"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    # 宿主机端口映射（如本机 5432 已被占用可改为 5433:5432）
+    ports:
+      - "5433:5432"
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.web
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://postgres:postgres@db:5432/oiertool
+      AUTH_SECRET: ${AUTH_SECRET:-}
+      INTERNAL_API_SECRET: ${INTERNAL_API_SECRET:-}
+      VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY:-}
+      VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY:-}
+      VAPID_SUBJECT: ${VAPID_SUBJECT:-}
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3000/api/healthz || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  crawler:
+    build:
+      context: .
+      dockerfile: Dockerfile.crawler
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://postgres:postgres@db:5432/oiertool
+      INTERNAL_API_SECRET: ${INTERNAL_API_SECRET:-}
+      WEB_INTERNAL_URL: http://web:3000
+      VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY:-}
+      VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY:-}
+    depends_on:
+      db:
+        condition: service_healthy
+      web:
+        condition: service_healthy
+
+volumes:
+  db-data:

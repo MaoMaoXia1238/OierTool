@@ -38,7 +38,7 @@ let prisma: PrismaClient | null = null;
  * 获取 Prisma 客户端实例（单例）
  * 启动时校验 DATABASE_URL，缺失立即抛出明确错误。
  */
-function getPrisma(): PrismaClient {
+export function getPrisma(): PrismaClient {
   if (!prisma) {
     const connectionString = requireEnv(
       "DATABASE_URL",
@@ -111,6 +111,20 @@ export async function runPipeline(
     inserted: result.count,
     skipped: contests.length - result.count,
   };
+}
+
+/**
+ * 清理已结束超过保留期的历史比赛，防止数据无限膨胀
+ * @param maxAgeDays - 保留天数（默认 30 天，以比赛结束时间为准）
+ * @returns 删除的记录数
+ */
+export async function cleanupOldContests(maxAgeDays = 30): Promise<number> {
+  const client = getPrisma();
+  const cutoff = new Date(Date.now() - maxAgeDays * 24 * 60 * 60 * 1000);
+  const result = await client.contest.deleteMany({
+    where: { endTime: { lt: cutoff } },
+  });
+  return result.count;
 }
 
 /**

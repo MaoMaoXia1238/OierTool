@@ -3,8 +3,10 @@
  * 定义整个应用的 HTML 结构、字体加载和全局元数据。
  * 所有页面都会嵌套在此布局中渲染。
  * 包含顶部导航栏（NavBar）和底部页脚（Footer）。
+ * 主题通过 cookie 在服务端渲染（避免内联脚本警告与暗色模式闪烁）。
  */
 import type { Metadata } from "next";
+import { cookies } from "next/headers";
 import Link from "next/link";
 import NavBar from "@/components/nav-bar";
 import { Analytics } from "@vercel/analytics/next";
@@ -17,25 +19,20 @@ export const metadata: Metadata = {
   description: "算法竞赛选手工具站 - 竞赛日历、数据聚合",
 };
 
-export default function RootLayout({
+/** 主题 cookie 名称（与 theme-toggle 保持一致） */
+export const THEME_COOKIE = "oier-tool-theme";
+
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // 服务端读取主题偏好，直接渲染 html class，避免闪烁与内联脚本
+  const theme = (await cookies()).get(THEME_COOKIE)?.value;
+  const dark = theme === "dark";
+
   return (
-    <html
-      lang="zh-CN"
-      className="h-full antialiased"
-      suppressHydrationWarning /* 主题脚本会在 hydration 前修改 html class，需抑制该属性差异警告 */
-    >
-      <head>
-        {/* 首屏前应用主题，避免暗色模式闪烁 */}
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `(function(){try{var t=localStorage.getItem("oier-tool-theme");if(t==="dark"||t==="light"){document.documentElement.classList.toggle("dark",t==="dark")}else if(window.matchMedia("(prefers-color-scheme: dark)").matches){document.documentElement.classList.add("dark")}}catch(e){}})();`,
-          }}
-        />
-      </head>
+    <html lang="zh-CN" className={`${dark ? "dark " : ""}h-full antialiased`} suppressHydrationWarning>
       <body className="min-h-full flex flex-col">
         <NavBar />
         <main className="flex-1">{children}</main>

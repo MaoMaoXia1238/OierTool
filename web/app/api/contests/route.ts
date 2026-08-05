@@ -1,8 +1,10 @@
 /**
  * 竞赛数据 API 路由处理器
- * GET /api/contests —— 返回即将到来的竞赛列表。
- * 支持参数：platform（平台筛选）、limit（数量上限，1-500，默认 100）。
- * 仅返回 startTime > 当前时间的竞赛，按 startTime 升序排列。
+ * GET /api/contests —— 返回竞赛列表。
+ * 支持参数：
+ *   platform  - 平台筛选
+ *   status    - upcoming（默认，即将开始）/ finished（已结束，倒序）
+ *   limit     - 数量上限（1-500，默认 100）
  * 响应带 CDN 缓存头（5 分钟 + stale-while-revalidate）。
  */
 
@@ -13,6 +15,9 @@ import { toContestData } from "@/lib/contest";
 
 /** 支持的平台白名单（与平台 Logo 映射保持一致） */
 const ALLOWED_PLATFORMS = new Set(Object.keys(PLATFORM_LOGOS));
+
+/** 支持的状态筛选值 */
+const ALLOWED_STATUSES = new Set(["upcoming", "finished"]);
 
 /** 默认 / 最大返回数量 */
 const DEFAULT_LIMIT = 100;
@@ -41,6 +46,15 @@ export async function GET(request: Request) {
       );
     }
 
+    // 校验 status 参数（upcoming / finished）
+    const status = url.searchParams.get("status") ?? "upcoming";
+    if (!ALLOWED_STATUSES.has(status)) {
+      return NextResponse.json(
+        { error: `不支持的 status: ${status}（可选值: upcoming, finished）` },
+        { status: 400 }
+      );
+    }
+
     // 校验 limit 参数（正整数，1-500）
     const limitRaw = url.searchParams.get("limit");
     let limit = DEFAULT_LIMIT;
@@ -55,13 +69,16 @@ export async function GET(request: Request) {
       limit = parsed;
     }
 
-    // 查询数据库：仅未开始的比赛，按开始时间升序
+    const now = new Date();
+    const isFinished = status === "finished";
+
+    // 查询数据库：即将开始（升序）或已结束（倒序）
     const contests = await prisma.contest.findMany({
       where: {
-        startTime: { gt: new Date() },
+        startTime: isFinished ? { lte: now } : { gt: now },
         ...(platform ? { platform } : {}),
       },
-      orderBy: { startTime: "asc" },
+      orderBy: { startTime: isFinished ? "desc" : "asc" },
       take: limit,
     });
 

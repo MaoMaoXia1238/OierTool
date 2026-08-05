@@ -51,7 +51,9 @@ export const AnyNull = runtime.AnyNull
 
 
 export const ModelName = {
-  Contest: 'Contest'
+  Contest: 'Contest',
+  PushSubscription: 'PushSubscription',
+  CrawlLog: 'CrawlLog'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -79,10 +81,38 @@ export const ContestScalarFieldEnum = {
   duration: 'duration',
   url: 'url',
   createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
+  updatedAt: 'updatedAt',
+  reminderSentAt: 'reminderSentAt'
 } as const
 
 export type ContestScalarFieldEnum = (typeof ContestScalarFieldEnum)[keyof typeof ContestScalarFieldEnum]
+
+
+export const PushSubscriptionScalarFieldEnum = {
+  id: 'id',
+  endpoint: 'endpoint',
+  p256dh: 'p256dh',
+  auth: 'auth',
+  userId: 'userId',
+  createdAt: 'createdAt'
+} as const
+
+export type PushSubscriptionScalarFieldEnum = (typeof PushSubscriptionScalarFieldEnum)[keyof typeof PushSubscriptionScalarFieldEnum]
+
+
+export const CrawlLogScalarFieldEnum = {
+  id: 'id',
+  platform: 'platform',
+  status: 'status',
+  inserted: 'inserted',
+  skipped: 'skipped',
+  total: 'total',
+  error: 'error',
+  durationMs: 'durationMs',
+  createdAt: 'createdAt'
+} as const
+
+export type CrawlLogScalarFieldEnum = (typeof CrawlLogScalarFieldEnum)[keyof typeof CrawlLogScalarFieldEnum]
 
 
 export const SortOrder = {

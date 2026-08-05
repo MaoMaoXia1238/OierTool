@@ -1,0 +1,30 @@
+# OierTool 爬虫镜像（常驻运行定时调度器）
+# 用法: docker build -f Dockerfile.crawler -t oiertool-crawler .
+# 需要安装 Playwright Chromium（洛谷/牛客爬虫依赖无头浏览器）。
+
+# ─── 阶段 1：安装依赖 ───
+FROM node:22-slim AS deps
+WORKDIR /app
+
+COPY package.json package-lock.json ./
+COPY web/package.json web/package.json
+COPY crawler/package.json crawler/package.json
+RUN npm ci
+
+# ─── 阶段 2：安装 Playwright 浏览器 ───
+FROM node:22-slim
+WORKDIR /app
+ENV NODE_ENV=production
+
+# 拷贝依赖与源码
+COPY --from=deps /app/node_modules ./node_modules
+COPY . .
+
+# 安装 Chromium 及其系统依赖
+RUN npx playwright install --with-deps chromium
+
+# 生成 Prisma Client
+RUN npx prisma generate
+
+# 常驻运行定时调度器（每日 08:00 北京时间自动爬取）
+CMD ["npx", "tsx", "crawler/scheduler.ts"]

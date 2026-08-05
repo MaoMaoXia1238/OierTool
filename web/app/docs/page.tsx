@@ -16,9 +16,10 @@ const API_ENDPOINTS = [
   {
     path: "/api/contests",
     method: "GET",
-    description: "返回即将到来的竞赛列表（支持平台筛选与数量限制）",
+    description: "返回竞赛列表（支持平台筛选、状态筛选与数量限制）",
     params: [
       { name: "platform", type: "string", required: false, description: "按平台筛选，可选值：\"Codeforces\"、\"AtCoder\"、\"Luogu\"、\"NowCoder\"、\"LeetCode\"" },
+      { name: "status", type: "string", required: false, description: "比赛状态：upcoming（默认，即将开始）/ finished（已结束，倒序）" },
       { name: "limit", type: "number", required: false, description: "返回数量上限，取值范围 1-500，默认 100" },
     ],
     successExample: `[
@@ -34,6 +35,33 @@ const API_ENDPOINTS = [
 ]`,
     errorExample: '{ "error": "不支持的平台: xxx" }',
     errorStatus: 400,
+  },
+  {
+    path: "/api/calendar.ics",
+    method: "GET",
+    description: "iCal 日历订阅（RFC 5545），可订阅到 Google Calendar / Outlook / 苹果日历",
+    params: [
+      { name: "platform", type: "string", required: false, description: "按平台筛选，只订阅指定平台的比赛" },
+    ],
+    successExample: `BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//OierTool//竞赛日历//CN\r\nBEGIN:VEVENT\r\nUID:contest-clx...@oiertool\r\nDTSTART:20260618T120000Z\r\nDTEND:20260618T140000Z\r\nSUMMARY:Codeforces Round #1000\r\nEND:VEVENT\r\nEND:VCALENDAR`,
+    errorExample: '{ "error": "不支持的平台: xxx" }',
+    errorStatus: 400,
+  },
+  {
+    path: "/api/healthz",
+    method: "GET",
+    description: "健康检查：数据库连通性与最近爬虫执行时间（供容器健康检查/监控使用）",
+    params: [],
+    successExample: `{
+  "status": "ok",
+  "database": "connected",
+  "lastCrawlAt": "2026-08-05T05:51:54.987Z",
+  "crawlAlive": true,
+  "uptime": 1234,
+  "latencyMs": 12
+}`,
+    errorExample: '{ "status": "error", "database": "unavailable" }',
+    errorStatus: 503,
   },
 ];
 

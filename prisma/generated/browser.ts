@@ -22,3 +22,13 @@ export * from './enums.ts';
  * 
  */
 export type Contest = Prisma.ContestModel
+/**
+ * Model PushSubscription
+ * 
+ */
+export type PushSubscription = Prisma.PushSubscriptionModel
+/**
+ * Model CrawlLog
+ * 
+ */
+export type CrawlLog = Prisma.CrawlLogModel

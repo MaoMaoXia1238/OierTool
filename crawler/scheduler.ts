@@ -5,19 +5,21 @@
  */
 
 import cron from "node-cron";
-import { crawlAllPlatforms } from "./crawl";
-import { runPipeline, disconnectPipeline } from "./pipeline";
+import { runCrawlJob, runReminderCheck } from "./crawl";
+import { disconnectPipeline } from "./pipeline";
 
 /** 调度时区（北京时间） */
 const CRON_TIMEZONE = "Asia/Shanghai";
-/** 调度表达式：每日 08:00 */
-const CRON_EXPRESSION = "0 8 * * *";
+/** 每日全量爬取：08:00 */
+const CRAWL_CRON = "0 8 * * *";
+/** 轻量提醒检查：每 15 分钟（仅查库 + 推送，不爬网页） */
+const REMINDER_CRON = "*/15 * * * *";
 
 /** 任务是否正在执行（防止重叠） */
 let running = false;
 
 /**
- * 执行完整的爬取 + 写入流程
+ * 执行完整的爬取任务（爬取 → 写入 → 清理 → 日志）
  */
 async function runJob(): Promise<void> {
   if (running) {
@@ -26,14 +28,12 @@ async function runJob(): Promise<void> {
   }
   running = true;
 
-  const startTime = Date.now();
   console.log(
     `[Scheduler] ===== 定时任务开始 [${new Date().toISOString()}] =====`
   );
 
   try {
-    // 并行爬取全部平台（单平台失败不影响其他）
-    const results = await crawlAllPlatforms();
+    const { results, pipeline, cleanedUp, durationMs } = await runCrawlJob();
 
     for (const result of results) {
       if (result.error) {
@@ -45,37 +45,57 @@ async function runJob(): Promise<void> {
       }
     }
 
-    // 合并数据写入数据库
-    const all = results.flatMap((r) => r.contests);
-    if (all.length === 0) {
-      console.log("[Scheduler] 无新比赛数据，跳过写入步骤");
-    } else {
-      const pipelineResult = await runPipeline(all);
-      console.log(
-        `[Scheduler] 写入完成: 总数=${pipelineResult.total}, 新增=${pipelineResult.inserted}, 跳过(重复)=${pipelineResult.skipped}`
-      );
+    console.log(
+      `[Scheduler] 写入完成: 总数=${pipeline.total}, 新增=${pipeline.inserted}, 跳过(重复)=${pipeline.skipped}`
+    );
+    if (cleanedUp > 0) {
+      console.log(`[Scheduler] 清理过期比赛: ${cleanedUp} 条`);
     }
+    console.log(`[Scheduler] 耗时: ${(durationMs / 1000).toFixed(1)}s`);
   } catch (error) {
     console.error("[Scheduler] 任务执行失败:", error);
   } finally {
     running = false;
-    const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
-    console.log(`[Scheduler] ===== 定时任务结束，耗时 ${elapsed}s =====\n`);
+    console.log(`[Scheduler] ===== 定时任务结束 =====\n`);
   }
 }
 
-// 配置定时任务：每日 08:00 (北京时间) 执行
+// 配置定时任务：
+// 1. 每日 08:00 (北京时间) 全量爬取 5 大平台
+// 2. 每 15 分钟轻量提醒检查（比赛开始前 15 分钟推送通知）
 cron.schedule(
-  CRON_EXPRESSION,
+  CRAWL_CRON,
   () => {
     void runJob();
   },
   { timezone: CRON_TIMEZONE }
 );
 
-console.log(
-  `[Scheduler] 定时调度器已启动，将在每日 ${CRON_EXPRESSION}（${CRON_TIMEZONE}）执行爬取任务`
+cron.schedule(
+  REMINDER_CRON,
+  () => {
+    void runReminderJob();
+  },
+  { timezone: CRON_TIMEZONE }
 );
+
+console.log(
+  `[Scheduler] 定时调度器已启动：每日 ${CRAWL_CRON}（${CRON_TIMEZONE}）全量爬取，每 15 分钟检查比赛提醒`
+);
+
+/**
+ * 轻量提醒任务：查询 15 分钟内开始的比赛并推送通知
+ */
+async function runReminderJob(): Promise<void> {
+  try {
+    const sent = await runReminderCheck();
+    if (sent > 0) {
+      console.log(`[Scheduler] 已触发 ${sent} 场比赛的提醒推送`);
+    }
+  } catch (error) {
+    console.error("[Scheduler] 提醒检查失败:", error);
+  }
+}
 
 // 进程退出时断开数据库连接
 async function shutdown(signal: string): Promise<void> {

@@ -33,9 +33,41 @@ model Contest {
   url       String?                         // 竞赛链接（可选）
   createdAt DateTime @default(now())        // 记录创建时间
   updatedAt DateTime @updatedAt             // 记录更新时间
+  reminderSentAt DateTime?                  // Web Push 提醒发送时间（避免重复推送）
 
   @@unique([name, platform, startTime])              // 去重唯一约束（name + platform + startTime）
   @@index([platform])                       // 按平台筛选优化
   @@index([startTime])                      // 按时间排序优化
   @@map("contests")                         // 数据库表名
+}
+
+// Web Push 订阅表
+// 存储浏览器端 PushSubscription，用于比赛开始提醒推送。
+// userId 为预留字段：当前免注册模式为 null，未来接入账号体系后用于关联用户。
+model PushSubscription {
+  id        String   @id @default(cuid())
+  endpoint  String   @unique                   // Push 订阅端点（浏览器厂商推送服务地址）
+  p256dh    String                             // 客户端公钥
+  auth      String                             // 认证密钥
+  userId    String?                            // 预留：关联用户（当前免注册模式为 null）
+  createdAt DateTime @default(now())
+
+  @@map("push_subscriptions")
+}
+
+// 爬虫执行日志表
+// 记录每次爬取任务的状态与统计，用于监控爬虫健康状态。
+model CrawlLog {
+  id         String   @id @default(cuid())
+  platform   String                            // 平台名称（含 "ALL" 汇总记录）
+  status     String                            // "success" | "error"
+  inserted   Int      @default(0)              // 新增比赛数
+  skipped    Int      @default(0)              // 跳过（重复）数
+  total      Int      @default(0)              // 该平台抓取总数
+  error      String?                           // 失败时的错误信息
+  durationMs Int      @default(0)              // 耗时（毫秒）
+  createdAt  DateTime @default(now())
+
+  @@index([createdAt])                         // 按时间查询最近日志
+  @@map("crawl_logs")
 }

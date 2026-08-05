@@ -9,4 +9,6 @@
  * 🟢 You can import this file directly.
  */
 export type * from './models/Contest.ts'
+export type * from './models/PushSubscription.ts'
+export type * from './models/CrawlLog.ts'
 export type * from './commonInputTypes.ts'

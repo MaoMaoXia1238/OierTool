@@ -44,6 +44,7 @@ export type ContestMinAggregateOutputType = {
   url: string | null
   createdAt: Date | null
   updatedAt: Date | null
+  reminderSentAt: Date | null
 }
 
 export type ContestMaxAggregateOutputType = {
@@ -56,6 +57,7 @@ export type ContestMaxAggregateOutputType = {
   url: string | null
   createdAt: Date | null
   updatedAt: Date | null
+  reminderSentAt: Date | null
 }
 
 export type ContestCountAggregateOutputType = {
@@ -68,6 +70,7 @@ export type ContestCountAggregateOutputType = {
   url: number
   createdAt: number
   updatedAt: number
+  reminderSentAt: number
   _all: number
 }
 
@@ -90,6 +93,7 @@ export type ContestMinAggregateInputType = {
   url?: true
   createdAt?: true
   updatedAt?: true
+  reminderSentAt?: true
 }
 
 export type ContestMaxAggregateInputType = {
@@ -102,6 +106,7 @@ export type ContestMaxAggregateInputType = {
   url?: true
   createdAt?: true
   updatedAt?: true
+  reminderSentAt?: true
 }
 
 export type ContestCountAggregateInputType = {
@@ -114,6 +119,7 @@ export type ContestCountAggregateInputType = {
   url?: true
   createdAt?: true
   updatedAt?: true
+  reminderSentAt?: true
   _all?: true
 }
 
@@ -213,6 +219,7 @@ export type ContestGroupByOutputType = {
   url: string | null
   createdAt: Date
   updatedAt: Date
+  reminderSentAt: Date | null
   _count: ContestCountAggregateOutputType | null
   _avg: ContestAvgAggregateOutputType | null
   _sum: ContestSumAggregateOutputType | null
@@ -248,6 +255,7 @@ export type ContestWhereInput = {
   url?: Prisma.StringNullableFilter<"Contest"> | string | null
   createdAt?: Prisma.DateTimeFilter<"Contest"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Contest"> | Date | string
+  reminderSentAt?: Prisma.DateTimeNullableFilter<"Contest"> | Date | string | null
 }
 
 export type ContestOrderByWithRelationInput = {
@@ -260,10 +268,12 @@ export type ContestOrderByWithRelationInput = {
   url?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
+  reminderSentAt?: Prisma.SortOrderInput | Prisma.SortOrder
 }
 
 export type ContestWhereUniqueInput = Prisma.AtLeast<{
   id?: string
+  name_platform_startTime?: Prisma.ContestNamePlatformStartTimeCompoundUniqueInput
   AND?: Prisma.ContestWhereInput | Prisma.ContestWhereInput[]
   OR?: Prisma.ContestWhereInput[]
   NOT?: Prisma.ContestWhereInput | Prisma.ContestWhereInput[]
@@ -275,7 +285,8 @@ export type ContestWhereUniqueInput = Prisma.AtLeast<{
   url?: Prisma.StringNullableFilter<"Contest"> | string | null
   createdAt?: Prisma.DateTimeFilter<"Contest"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Contest"> | Date | string
-}, "id">
+  reminderSentAt?: Prisma.DateTimeNullableFilter<"Contest"> | Date | string | null
+}, "id" | "name_platform_startTime">
 
 export type ContestOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
@@ -287,6 +298,7 @@ export type ContestOrderByWithAggregationInput = {
   url?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
+  reminderSentAt?: Prisma.SortOrderInput | Prisma.SortOrder
   _count?: Prisma.ContestCountOrderByAggregateInput
   _avg?: Prisma.ContestAvgOrderByAggregateInput
   _max?: Prisma.ContestMaxOrderByAggregateInput
@@ -307,6 +319,7 @@ export type ContestScalarWhereWithAggregatesInput = {
   url?: Prisma.StringNullableWithAggregatesFilter<"Contest"> | string | null
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"Contest"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"Contest"> | Date | string
+  reminderSentAt?: Prisma.DateTimeNullableWithAggregatesFilter<"Contest"> | Date | string | null
 }
 
 export type ContestCreateInput = {
@@ -319,6 +332,7 @@ export type ContestCreateInput = {
   url?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  reminderSentAt?: Date | string | null
 }
 
 export type ContestUncheckedCreateInput = {
@@ -331,6 +345,7 @@ export type ContestUncheckedCreateInput = {
   url?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  reminderSentAt?: Date | string | null
 }
 
 export type ContestUpdateInput = {
@@ -343,6 +358,7 @@ export type ContestUpdateInput = {
   url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  reminderSentAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
 }
 
 export type ContestUncheckedUpdateInput = {
@@ -355,6 +371,7 @@ export type ContestUncheckedUpdateInput = {
   url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  reminderSentAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
 }
 
 export type ContestCreateManyInput = {
@@ -367,6 +384,7 @@ export type ContestCreateManyInput = {
   url?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  reminderSentAt?: Date | string | null
 }
 
 export type ContestUpdateManyMutationInput = {
@@ -379,6 +397,7 @@ export type ContestUpdateManyMutationInput = {
   url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  reminderSentAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
 }
 
 export type ContestUncheckedUpdateManyInput = {
@@ -391,6 +410,13 @@ export type ContestUncheckedUpdateManyInput = {
   url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  reminderSentAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+}
+
+export type ContestNamePlatformStartTimeCompoundUniqueInput = {
+  name: string
+  platform: string
+  startTime: Date | string
 }
 
 export type ContestCountOrderByAggregateInput = {
@@ -403,6 +429,7 @@ export type ContestCountOrderByAggregateInput = {
   url?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
+  reminderSentAt?: Prisma.SortOrder
 }
 
 export type ContestAvgOrderByAggregateInput = {
@@ -419,6 +446,7 @@ export type ContestMaxOrderByAggregateInput = {
   url?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
+  reminderSentAt?: Prisma.SortOrder
 }
 
 export type ContestMinOrderByAggregateInput = {
@@ -431,6 +459,7 @@ export type ContestMinOrderByAggregateInput = {
   url?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
+  reminderSentAt?: Prisma.SortOrder
 }
 
 export type ContestSumOrderByAggregateInput = {
@@ -457,6 +486,10 @@ export type NullableStringFieldUpdateOperationsInput = {
   set?: string | null
 }
 
+export type NullableDateTimeFieldUpdateOperationsInput = {
+  set?: Date | string | null
+}
+
 
 
 export type ContestSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -469,6 +502,7 @@ export type ContestSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs 
   url?: boolean
   createdAt?: boolean
   updatedAt?: boolean
+  reminderSentAt?: boolean
 }, ExtArgs["result"]["contest"]>
 
 export type ContestSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -481,6 +515,7 @@ export type ContestSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Exten
   url?: boolean
   createdAt?: boolean
   updatedAt?: boolean
+  reminderSentAt?: boolean
 }, ExtArgs["result"]["contest"]>
 
 export type ContestSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -493,6 +528,7 @@ export type ContestSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Exten
   url?: boolean
   createdAt?: boolean
   updatedAt?: boolean
+  reminderSentAt?: boolean
 }, ExtArgs["result"]["contest"]>
 
 export type ContestSelectScalar = {
@@ -505,9 +541,10 @@ export type ContestSelectScalar = {
   url?: boolean
   createdAt?: boolean
   updatedAt?: boolean
+  reminderSentAt?: boolean
 }
 
-export type ContestOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "name" | "platform" | "startTime" | "endTime" | "duration" | "url" | "createdAt" | "updatedAt", ExtArgs["result"]["contest"]>
+export type ContestOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "name" | "platform" | "startTime" | "endTime" | "duration" | "url" | "createdAt" | "updatedAt" | "reminderSentAt", ExtArgs["result"]["contest"]>
 
 export type $ContestPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "Contest"
@@ -522,6 +559,7 @@ export type $ContestPayload<ExtArgs extends runtime.Types.Extensions.InternalArg
     url: string | null
     createdAt: Date
     updatedAt: Date
+    reminderSentAt: Date | null
   }, ExtArgs["result"]["contest"]>
   composites: {}
 }
@@ -954,6 +992,7 @@ export interface ContestFieldRefs {
   readonly url: Prisma.FieldRef<"Contest", 'String'>
   readonly createdAt: Prisma.FieldRef<"Contest", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"Contest", 'DateTime'>
+  readonly reminderSentAt: Prisma.FieldRef<"Contest", 'DateTime'>
 }
     
 

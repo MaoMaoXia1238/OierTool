@@ -6,10 +6,13 @@ OierTool 是一个开源的算法竞赛日历工具站，**自动聚合 Codeforc
 
 ## 核心功能
 
-- **竞赛日历** — 自动聚合 5 大平台竞赛数据，统一日历展示 + 实时倒计时 + 平台筛选
-- **REST API** — 通过 `/api/contests` 获取即将开始的竞赛数据（支持平台筛选与数量限制）
-- **定时爬虫** — 每日 08:00（北京时间）自动同步各平台竞赛信息
+- **竞赛日历** — 自动聚合 5 大平台竞赛数据，统一日历展示 + 实时倒计时 + 平台筛选 + 历史归档
+- **iCal 日历订阅** — 一键订阅到 Google Calendar / Outlook / 苹果日历，比赛自动同步
+- **Web Push 比赛提醒** — 浏览器通知，比赛开始前 15 分钟自动提醒（免注册，一键开启，浏览器后台运行即可收到）
+- **REST API** — 获取竞赛数据（平台/状态筛选、数量限制）与健康检查接口
+- **定时爬虫** — 每日 08:00（北京时间）自动同步各平台竞赛信息，自动清理过期数据
 - **暗色模式** — 跟随系统主题，支持手动切换并持久化
+- **Docker 自托管** — docker-compose 一键部署 web + crawler + PostgreSQL
 
 ## 技术栈
 
@@ -89,12 +92,23 @@ npm run crawl -w crawler    # 手动执行一次全平台爬取
 
 ## API
 
-`GET /api/contests` — 返回即将到来的竞赛列表
+### `GET /api/contests` — 竞赛列表
 
 | 参数 | 类型 | 必填 | 说明 |
 |------|------|------|------|
 | `platform` | string | 否 | 按平台筛选：`Codeforces` / `AtCoder` / `Luogu` / `NowCoder` / `LeetCode` |
+| `status` | string | 否 | `upcoming`（默认）/ `finished`（已结束，倒序） |
 | `limit` | number | 否 | 返回数量上限，1-500，默认 100 |
+
+### `GET /api/calendar.ics` — iCal 日历订阅
+
+生成 RFC 5545 格式日历，支持 `?platform=` 单平台订阅。订阅方式：
+1. 点击竞赛日历页「订阅日历」按钮复制链接
+2. 在 Google Calendar / Outlook / 苹果日历中「添加日历 → 通过 URL 订阅」
+
+### `GET /api/healthz` — 健康检查
+
+返回数据库连通性、最近爬虫执行时间（`crawlAlive`），供容器健康检查与监控使用。
 
 响应带 CDN 缓存头（5 分钟 + stale-while-revalidate）。完整文档见站内 [API 文档](https://oiertool.cn/docs)。
 
@@ -102,7 +116,7 @@ npm run crawl -w crawler    # 手动执行一次全平台爬取
 
 - **Web 前端**：GitHub Actions 自动部署至 Vercel（推送 `main` 触发）
 - **定时爬虫**：GitHub Actions 定时任务每日 3 次执行
-- **自托管（可选）**：crawler 可打包为 Docker 镜像在服务器常驻运行（`scheduler.ts` 内置 node-cron），适合爬虫高频率场景
+- **Docker 自托管**：国内服务器可用 `docker compose up -d --build` 一键部署 web + crawler + PostgreSQL（爬虫容器内置 node-cron，每日 08:00 北京时间自动爬取）
 
 ## License
 
