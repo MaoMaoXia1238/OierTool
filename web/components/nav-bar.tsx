@@ -14,6 +14,7 @@ import ThemeToggle from "@/components/theme-toggle";
 const navLinks = [
   { href: "/", label: "首页" },
   { href: "/calendar", label: "竞赛日历" },
+  { href: "/ide", label: "在线 IDE" },
   { href: "/docs", label: "API 文档" },
 ];
 

@@ -93,6 +93,8 @@
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
+  /* 在线 IDE 代码编辑区背景（浅色下略偏蓝灰，与纯白卡片区分） */
+  --ide-editor-bg: oklch(0.978 0.005 250);
 }
 
 /* 暗色主题变量 */
@@ -128,6 +130,8 @@
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.556 0 0);
+  /* 在线 IDE 代码编辑区背景（深色下比卡片更深邃，带轻微蓝调） */
+  --ide-editor-bg: oklch(0.185 0.008 250);
 }
 
 /* 全局基础样式重置 */

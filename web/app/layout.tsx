@@ -91,6 +91,11 @@ export default async function RootLayout({
                     </Link>
                   </li>
                   <li>
+                    <Link href="/ide" className="transition-colors hover:text-foreground">
+                      在线 IDE
+                    </Link>
+                  </li>
+                  <li>
                     <Link href="/docs" className="transition-colors hover:text-foreground">
                       API 文档
                     </Link>
