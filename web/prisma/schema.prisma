@@ -34,6 +34,7 @@ model Contest {
   createdAt DateTime @default(now())        // 记录创建时间
   updatedAt DateTime @updatedAt             // 记录更新时间
 
+  @@unique([name, platform, startTime])              // 去重唯一约束（name + platform + startTime）
   @@index([platform])                       // 按平台筛选优化
   @@index([startTime])                      // 按时间排序优化
   @@map("contests")                         // 数据库表名

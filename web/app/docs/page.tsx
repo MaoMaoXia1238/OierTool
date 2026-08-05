@@ -1,18 +1,25 @@
 /**
- * OierTool - API 文档页面
+ * OierTool - API 文档页面（服务端组件）
  * 展示后端接口的使用方法，包含接口地址、请求方式、参数说明、响应示例和错误码。
  * 帮助开发者快速接入 OierTool API。
  */
-"use client";
+import type { Metadata } from "next";
+import { CodeBlock } from "@/components/code-block";
+
+export const metadata: Metadata = {
+  title: "API 文档 | OierTool",
+  description: "OierTool API 接口文档 - 获取各大 OJ 平台即将开始的竞赛数据",
+};
 
 /** API 接口文档数据 */
 const API_ENDPOINTS = [
   {
     path: "/api/contests",
     method: "GET",
-    description: "返回即将到来的竞赛列表",
+    description: "返回即将到来的竞赛列表（支持平台筛选与数量限制）",
     params: [
-      { name: "platform", type: "string", required: false, description: "按平台筛选，可选值：\"Codeforces\"、\"Luogu\"" },
+      { name: "platform", type: "string", required: false, description: "按平台筛选，可选值：\"Codeforces\"、\"AtCoder\"、\"Luogu\"、\"NowCoder\"、\"LeetCode\"" },
+      { name: "limit", type: "number", required: false, description: "返回数量上限，取值范围 1-500，默认 100" },
     ],
     successExample: `[
   {
@@ -22,13 +29,11 @@ const API_ENDPOINTS = [
     "startTime": "2026-06-18T12:00:00.000Z",
     "endTime": "2026-06-18T14:00:00.000Z",
     "duration": 120,
-    "url": "https://codeforces.com/contest/1000",
-    "createdAt": "2026-06-12T09:13:33.635Z",
-    "updatedAt": "2026-06-12T09:13:33.635Z"
+    "url": "https://codeforces.com/contest/1000"
   }
 ]`,
-    errorExample: '{ "error": "Internal Server Error" }',
-    errorStatus: 500,
+    errorExample: '{ "error": "不支持的平台: xxx" }',
+    errorStatus: 400,
   },
 ];
 
@@ -41,21 +46,7 @@ const RESPONSE_FIELDS = [
   { name: "endTime", type: "string (ISO 8601)", description: "竞赛结束时间" },
   { name: "duration", type: "number", description: "竞赛时长（分钟）" },
   { name: "url", type: "string", description: "竞赛链接" },
-  { name: "createdAt", type: "string (ISO 8601)", description: "数据创建时间" },
-  { name: "updatedAt", type: "string (ISO 8601)", description: "数据更新时间" },
 ];
-
-/**
- * 代码块组件
- * 使用 pre + code 标签展示代码示例，带灰色背景
- */
-function CodeBlock({ code, language = "json" }: { code: string; language?: string }) {
-  return (
-    <pre className="overflow-x-auto rounded-lg bg-muted p-4 text-sm leading-relaxed">
-      <code className={`language-${language} text-muted-foreground`}>{code}</code>
-    </pre>
-  );
-}
 
 /**
  * 区块标题组件

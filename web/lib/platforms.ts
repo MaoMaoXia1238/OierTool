@@ -40,3 +40,22 @@ const LARGE_LOGO_PLATFORMS = new Set(["AtCoder", "LeetCode"]);
 export function getLogoSizeClass(platform: string): string {
   return LARGE_LOGO_PLATFORMS.has(platform) ? "h-8 w-8" : "h-6 w-6";
 }
+
+/** 平台名称 → 主题色（用于徽章、指示点等 UI 元素） */
+export const PLATFORM_COLORS: Record<string, string> = {
+  Codeforces: "text-blue-600 dark:text-blue-400 bg-blue-100 dark:bg-blue-500/15 border-blue-500/20",
+  Luogu: "text-emerald-600 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-500/15 border-emerald-500/20",
+  NowCoder: "text-violet-600 dark:text-violet-400 bg-violet-100 dark:bg-violet-500/15 border-violet-500/20",
+  AtCoder: "text-orange-600 dark:text-orange-400 bg-orange-100 dark:bg-orange-500/15 border-orange-500/20",
+  LeetCode: "text-amber-600 dark:text-amber-400 bg-amber-100 dark:bg-amber-500/15 border-amber-500/20",
+};
+
+/**
+ * 获取平台主题色类名（徽章/指示点样式，未收录平台返回中性灰）
+ */
+export function getPlatformColor(platform: string): string {
+  return (
+    PLATFORM_COLORS[platform] ??
+    "text-muted-foreground bg-muted border-border"
+  );
+}

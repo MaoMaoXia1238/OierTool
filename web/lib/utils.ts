@@ -52,11 +52,12 @@ export function formatStartTime(date: Date | string, options?: { showYear?: bool
 /**
  * 计算距离比赛开始的倒计时
  * @param startTime - 比赛开始时间
+ * @param now - 当前时间（可选，用于列表实时刷新场景；默认取 Date.now()）
  * @returns 包含倒计时文本和严重等级的对象
  */
-export function getCountdown(startTime: Date | string): { text: string; severity: Severity } {
+export function getCountdown(startTime: Date | string, now?: Date): { text: string; severity: Severity } {
   const start = typeof startTime === "string" ? new Date(startTime) : startTime;
-  const diffMs = start.getTime() - Date.now();
+  const diffMs = start.getTime() - (now ? now.getTime() : Date.now());
   if (diffMs <= 0) return { text: "已开始", severity: "normal" };
 
   const totalMinutes = Math.floor(diffMs / 60000);

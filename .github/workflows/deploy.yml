@@ -44,14 +44,23 @@ jobs:
       - name: 安装依赖
         run: npm ci
 
-      - name: TypeScript 类型检查（Web）
-        run: npx -w web tsc --noEmit
+      - name: 类型检查（Web）
+        run: npm run typecheck -w web
+
+      - name: 类型检查（Crawler）
+        run: npm run typecheck -w crawler
+
+      - name: 代码检查（Web）
+        run: npm run lint -w web
+
+      - name: 代码检查（Crawler）
+        run: npm run lint -w crawler
 
       - name: 运行单元测试（Web）
-        run: npx -w web vitest run
+        run: npm run test -w web
 
       - name: 运行单元测试（Crawler）
-        run: npx -w crawler vitest run
+        run: npm run test -w crawler
 
   # ─────────────────── CD：部署到 Vercel ───────────────────
   deploy:

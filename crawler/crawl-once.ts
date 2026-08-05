@@ -1,71 +1,43 @@
 /**
- * 单次爬取脚本（供 Windows 任务计划程序 / cron 调用）
- * 依次爬取 Codeforces + 洛谷 + 牛客 + AtCoder + LeetCode，写入数据库后退出。
- * 
+ * 单次爬取脚本（供定时任务 / Docker 调用）
+ * 并行爬取 Codeforces + 洛谷 + 牛客 + AtCoder + LeetCode，写入数据库后退出。
+ *
  * 用法: npx tsx --env-file=.env crawl-once.ts
  */
-import { fetchCodeforcesContests } from "./spiders/codeforces";
-import { fetchLuoguContests } from "./spiders/luogu";
-import { fetchNowCoderContests } from "./spiders/nowcoder";
-import { fetchAtCoderContests } from "./spiders/atcoder";
-import { fetchLeetCodeContests } from "./spiders/leetcode";
-import { runPipeline, disconnectPipeline, ContestInput } from "./pipeline";
+import { crawlAllPlatforms } from "./crawl";
+import { runPipeline, disconnectPipeline } from "./pipeline";
 
-async function main() {
+async function main(): Promise<void> {
   console.log(`[Crawl] ===== 开始 [${new Date().toISOString()}] =====`);
 
-  let cfContests: ContestInput[] = [];
-  let lgContests: ContestInput[] = [];
-  let ncContests: ContestInput[] = [];
-  let acContests: ContestInput[] = [];
-  let lcContests: ContestInput[] = [];
+  const results = await crawlAllPlatforms();
 
-  try {
-    cfContests = await fetchCodeforcesContests();
-    console.log(`[Crawl] Codeforces: ${cfContests.length} 条`);
-  } catch (e) {
-    console.error("[Crawl] Codeforces 失败:", e);
+  for (const result of results) {
+    if (result.error) {
+      console.error(`[Crawl] ${result.platform} 失败: ${result.error}`);
+    } else {
+      console.log(`[Crawl] ${result.platform}: ${result.contests.length} 条`);
+    }
   }
 
+  // 合并全部平台数据后一起写入
+  const all = results.flatMap((r) => r.contests);
   try {
-    lgContests = await fetchLuoguContests();
-    console.log(`[Crawl] 洛谷: ${lgContests.length} 条`);
-  } catch (e) {
-    console.error("[Crawl] 洛谷失败:", e);
-  }
-
-  try {
-    ncContests = await fetchNowCoderContests();
-    console.log(`[Crawl] 牛客: ${ncContests.length} 条`);
-  } catch (e) {
-    console.error("[Crawl] 牛客失败:", e);
-  }
-
-  try {
-    acContests = await fetchAtCoderContests();
-    console.log(`[Crawl] AtCoder: ${acContests.length} 条`);
-  } catch (e) {
-    console.error("[Crawl] AtCoder 失败:", e);
-  }
-
-  try {
-    lcContests = await fetchLeetCodeContests();
-    console.log(`[Crawl] LeetCode: ${lcContests.length} 条`);
-  } catch (e) {
-    console.error("[Crawl] LeetCode 失败:", e);
-  }
-
-  // 合并数据后一起写入
-  try {
-    const all = [...cfContests, ...lgContests, ...ncContests, ...acContests, ...lcContests];
-    const result = await runPipeline(all);
-    console.log(`[Crawl] 写入: 新增=${result.inserted}, 跳过=${result.skipped}`);
+    const pipelineResult = await runPipeline(all);
+    console.log(
+      `[Crawl] 写入: 总数=${pipelineResult.total}, 新增=${pipelineResult.inserted}, 跳过(重复)=${pipelineResult.skipped}`
+    );
   } catch (e) {
     console.error("[Crawl] 管道写入失败:", e);
+    process.exitCode = 1;
+  } finally {
+    await disconnectPipeline();
   }
 
-  await disconnectPipeline();
   console.log(`[Crawl] ===== 结束 =====`);
 }
 
-main().catch(console.error);
+main().catch((error) => {
+  console.error("[Crawl] 未预期的致命错误:", error);
+  process.exit(1);
+});

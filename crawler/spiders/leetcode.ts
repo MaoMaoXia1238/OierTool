@@ -7,7 +7,7 @@
  * 限制: 无需认证，建议控制请求频率
  */
 
-import axios from "axios";
+import { createHttpClient } from "./http";
 
 /** 解析后的比赛数据 */
 export interface LeetCodeContest {
@@ -75,21 +75,17 @@ export function parseLeetCodeContests(data: LeetCodeApiResponse): LeetCodeContes
  */
 export async function fetchLeetCodeContests(): Promise<LeetCodeContest[]> {
   const url = "https://leetcode.com/graphql";
-
-  const { data } = await axios.post<LeetCodeApiResponse>(
-    url,
-    {
-      operationName: null,
-      variables: {},
-      query: `{ allContests { title titleSlug startTime duration containsPremium } }`,
+  const client = createHttpClient({
+    headers: {
+      "Content-Type": "application/json",
     },
-    {
-      headers: {
-        "Content-Type": "application/json",
-      },
-      timeout: 15000,
-    }
-  );
+  });
+
+  const { data } = await client.post<LeetCodeApiResponse>(url, {
+    operationName: null,
+    variables: {},
+    query: `{ allContests { title titleSlug startTime duration containsPremium } }`,
+  });
 
   return parseLeetCodeContests(data);
 }

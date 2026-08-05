@@ -10,8 +10,8 @@ export default defineConfig({
   // E2E 测试文件目录
   testDir: "tests/e2e",
   use: {
-    // 测试时的基础 URL（对应 Next.js 开发服务器）
-    baseURL: "http://localhost:3000",
+    // 测试时的基础 URL（可通过 BASE_URL 环境变量覆盖，本地默认 3000）
+    baseURL: process.env.BASE_URL ?? "http://localhost:3000",
   },
   // 自动启动开发服务器
   webServer: {

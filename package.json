@@ -1,5 +1,7 @@
 {
   "_comment": "OierTool 根级 npm workspaces 配置。web/ 和 crawler/ 共享公共开发依赖。",
+  "name": "oiertool",
+  "description": "算法竞赛选手的随身工具站 - 自动聚合 5 大 OJ 平台竞赛数据",
   "private": true,
   "workspaces": [
     "web",
@@ -8,7 +10,10 @@
   "scripts": {
     "test": "npm run test -w web && npm run test -w crawler",
     "test:web": "npm run test -w web",
-    "test:crawler": "npm run test -w crawler"
+    "test:crawler": "npm run test -w crawler",
+    "lint": "npm run lint -w web && npm run lint -w crawler",
+    "typecheck": "npm run typecheck -w web && npm run typecheck -w crawler",
+    "check": "npm run typecheck && npm run lint && npm test"
   },
   "devDependencies": {
     "@playwright/test": "^1.60.0",

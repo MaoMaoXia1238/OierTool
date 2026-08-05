@@ -51,7 +51,6 @@ export function parseNowCoderContests(html: string): NowCoderContest[] {
     const match = href.match(/^\/acm\/contest\/(\d+)$/);
     if (!match) return;
 
-    const contestId = match[1];
     const title = $(el).text().trim();
     if (!title) return;
 

@@ -1,58 +1,22 @@
 /**
  * Codeforces 爬虫单元测试
- * 验证 fetchCodeforcesContests 对 API 返回数据的处理逻辑。
- * 由于 axios 动态导入 mock 存在问题，改为直接测试数据过滤和转换逻辑。
+ * 直接测试 spider 中导出的纯转换函数 transformContests，
+ * 覆盖过滤、排序、格式转换等核心逻辑。
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { transformContests, type CfApiContest } from "../../crawler/spiders/codeforces";
 
-/**
- * API 原始响应的单条比赛
- */
-interface CfApiContest {
-  id: number;
-  name: string;
-  phase: string;
-  durationSeconds: number;
-  startTimeSeconds?: number;
-}
+beforeEach(() => {
+  // 固定系统时间，避免 mock 数据中的静态时间戳随真实时间推移过期
+  vi.useFakeTimers({ toFake: ["Date"] });
+  vi.setSystemTime(new Date("2026-04-01T00:00:00Z"));
+});
 
-/**
- * 最终返回的比赛数据
- */
-interface CodeforcesContest {
-  name: string;
-  startTime: Date;
-  duration: number;
-  url: string;
-  platform: string;
-}
+afterEach(() => {
+  vi.useRealTimers();
+});
 
-/**
- * 模拟 fetchCodeforcesContests 的核心转换逻辑（从 spider 中提取）
- * 方便直接测试数据过滤和格式转换
- */
-function mockTransform(apiContests: CfApiContest[]): CodeforcesContest[] {
-  const now = new Date();
-
-  const contests = apiContests
-    .filter((c) => {
-      if (c.phase !== "BEFORE") return false;
-      if (!c.startTimeSeconds) return false;
-      return new Date(c.startTimeSeconds * 1000) > now;
-    })
-    .map((c) => ({
-      name: c.name,
-      startTime: new Date(c.startTimeSeconds! * 1000),
-      duration: Math.round(c.durationSeconds / 60),
-      url: `https://codeforces.com/contest/${c.id}`,
-      platform: "Codeforces" as const,
-    }));
-
-  contests.sort((a, b) => a.startTime.getTime() - b.startTime.getTime());
-  return contests;
-}
-
-// 模拟 API fixture 数据
+// API 原始响应样例
 const mockApiData: CfApiContest[] = [
   {
     id: 2237,
@@ -77,19 +41,9 @@ const mockApiData: CfApiContest[] = [
   },
 ];
 
-beforeEach(() => {
-  // 固定系统时间，避免 mock 数据中的静态时间戳随真实时间推移过期
-  vi.useFakeTimers({ toFake: ["Date"] });
-  vi.setSystemTime(new Date("2026-04-01T00:00:00Z"));
-});
-
-afterEach(() => {
-  vi.useRealTimers();
-});
-
-describe("Codeforces API 数据转换逻辑", () => {
+describe("transformContests", () => {
   it("应返回未开始的比赛数组", () => {
-    const result = mockTransform(mockApiData);
+    const result = transformContests(mockApiData);
 
     expect(Array.isArray(result)).toBe(true);
     expect(result.length).toBeGreaterThan(0);
@@ -104,9 +58,8 @@ describe("Codeforces API 数据转换逻辑", () => {
   });
 
   it("应过滤已结束的比赛", () => {
-    const result = mockTransform(mockApiData);
+    const result = transformContests(mockApiData);
 
-    // FINISHED 的比赛不应出现
     const finishedNames = result.map((c) => c.name);
     expect(finishedNames).not.toContain(
       "Educational Codeforces Round 191 (Rated for Div. 2)"
@@ -114,7 +67,7 @@ describe("Codeforces API 数据转换逻辑", () => {
   });
 
   it("应正确转换数据：名称、链接、时长", () => {
-    const result = mockTransform(mockApiData);
+    const result = transformContests(mockApiData);
 
     // 按开始时间升序，第一场是最早的比赛
     expect(result[0].name).toBe("Codeforces Round 1103 (Div. 3)");
@@ -124,7 +77,7 @@ describe("Codeforces API 数据转换逻辑", () => {
   });
 
   it("API 返回空数组时应返回空结果", () => {
-    const result = mockTransform([]);
+    const result = transformContests([]);
     expect(result).toEqual([]);
   });
 
@@ -132,7 +85,15 @@ describe("Codeforces API 数据转换逻辑", () => {
     const allFinished: CfApiContest[] = [
       { id: 1, name: "Old Contest", phase: "FINISHED", durationSeconds: 7200, startTimeSeconds: 1000000000 },
     ];
-    const result = mockTransform(allFinished);
+    const result = transformContests(allFinished);
+    expect(result).toEqual([]);
+  });
+
+  it("缺少 startTimeSeconds 的 BEFORE 比赛应被过滤", () => {
+    const noStart: CfApiContest[] = [
+      { id: 2, name: "No Start Time", phase: "BEFORE", durationSeconds: 7200 },
+    ];
+    const result = transformContests(noStart);
     expect(result).toEqual([]);
   });
 });

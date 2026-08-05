@@ -8,22 +8,22 @@
  * 限制: 每秒最多 1 次请求
  */
 
-import axios from "axios";
+import { createHttpClient } from "./http";
 
-/** API 返回的比赛数据 */
+/** 最终返回的比赛数据 */
 export interface CodeforcesContest {
   name: string;
   startTime: Date;
-  duration: number;    // 时长（分钟）
+  duration: number; // 时长（分钟）
   url: string;
   platform: string;
 }
 
 /** API 原始响应的单条比赛 */
-interface CfApiContest {
+export interface CfApiContest {
   id: number;
   name: string;
-  phase: string;                    // "BEFORE" | "CODING" | "FINISHED"
+  phase: string; // "BEFORE" | "CODING" | "FINISHED"
   durationSeconds: number;
   startTimeSeconds?: number;
 }
@@ -38,45 +38,50 @@ interface CfApiResponse {
 const API_BASE = "https://codeforces.com/api";
 
 /**
- * 获取 Codeforces 比赛列表（通过官方 API）
- * @returns 未开始的比赛数组（仅 phase === "BEFORE"）
+ * 将 API 原始数据过滤并转换为统一比赛格式（纯函数，可独立测试）
+ * 仅保留 phase === "BEFORE" 且开始时间在未来的比赛，按开始时间升序。
+ * @param apiContests - API 返回的原始比赛数组
+ * @param now - 当前时间（可选，默认 Date.now()）
  */
-export async function fetchCodeforcesContests(
-  maxCount?: number
-): Promise<CodeforcesContest[]> {
-  // 请求 API
-  const response = await axios.get<CfApiResponse>(
-    `${API_BASE}/contest.list`,
-    { timeout: 15000 }
-  );
-
-  // 检查 API 状态
-  if (response.data.status !== "OK") {
-    console.error("[Codeforces API] 请求失败:", response.data);
-    return [];
-  }
-
-  const now = new Date();
-
-  // 过滤并转换未开始的比赛
-  const contests: CodeforcesContest[] = response.data.result
-    // 仅保留未开始的比赛（phase === "BEFORE" 且 startTime 在未来，使用 UTC 比较）
-    .filter((c) => {
-      if (c.phase !== "BEFORE") return false;
-      if (!c.startTimeSeconds) return false;
-      return new Date(c.startTimeSeconds * 1000) > now;
-    })
-    // 转换为统一格式（startTime 转为中国标准时间 CST）
+export function transformContests(
+  apiContests: CfApiContest[],
+  now: Date = new Date()
+): CodeforcesContest[] {
+  return apiContests
+    .filter((c) => c.phase === "BEFORE" && !!c.startTimeSeconds)
+    .filter((c) => new Date(c.startTimeSeconds! * 1000) > now)
     .map((c) => ({
       name: c.name,
       startTime: new Date(c.startTimeSeconds! * 1000),
       duration: Math.round(c.durationSeconds / 60), // 秒转分钟
       url: `https://codeforces.com/contest/${c.id}`,
       platform: "Codeforces" as const,
-    }));
+    }))
+    .sort((a, b) => a.startTime.getTime() - b.startTime.getTime());
+}
 
-  // 按开始时间升序排列
-  contests.sort((a, b) => a.startTime.getTime() - b.startTime.getTime());
+/**
+ * 获取 Codeforces 比赛列表（通过官方 API）
+ * @param maxCount - 可选，最多返回的场次数
+ * @returns 未开始的比赛数组（仅 phase === "BEFORE"）
+ */
+export async function fetchCodeforcesContests(
+  maxCount?: number
+): Promise<CodeforcesContest[]> {
+  const client = createHttpClient();
+
+  const response = await client.get<CfApiResponse>(
+    `${API_BASE}/contest.list`
+  );
+
+  // 检查 API 状态（非 OK 视为异常响应）
+  if (response.data.status !== "OK") {
+    throw new Error(
+      `[Codeforces API] 响应状态异常: ${JSON.stringify(response.data)}`
+    );
+  }
+
+  const contests = transformContests(response.data.result);
 
   // 限制返回数量（默认全部）
   if (maxCount && maxCount > 0) {
@@ -85,5 +90,3 @@ export async function fetchCodeforcesContests(
 
   return contests;
 }
-
-

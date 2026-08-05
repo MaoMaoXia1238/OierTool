@@ -7,8 +7,8 @@
  * 直接使用 HTTP 请求即可获取，无需浏览器渲染。
  */
 
-import axios from "axios";
 import * as cheerio from "cheerio";
+import { createHttpClient } from "./http";
 
 /** 解析后的比赛数据 */
 export interface AtCoderContest {
@@ -69,8 +69,13 @@ export function parseAtCoderContests(html: string): AtCoderContest[] {
     // 验证日期有效
     if (isNaN(startTime.getTime())) return;
 
-    // 跳过 AtCoder 每日练习场次（如 "AtCoder Daily Training EASY 2026/08/05 16:00 start"）
-    if (rawName.startsWith("AtCoder Daily Training")) return;
+    // 跳过 AtCoder 每日练习场次（如 "AtCoder Daily Training EASY 2026/08/05 16:00 start"、"AtCoder Weekday Contest 0128 Beta"）
+    if (
+      rawName.startsWith("AtCoder Daily Training") ||
+      rawName.startsWith("AtCoder Weekday Contest")
+    ) {
+      return;
+    }
 
     const duration = parseDuration(durationText);
     const endTime = new Date(startTime.getTime() + duration * 60 * 1000);
@@ -96,16 +101,14 @@ export function parseAtCoderContests(html: string): AtCoderContest[] {
  */
 export async function fetchAtCoderContests(): Promise<AtCoderContest[]> {
   const url = "https://atcoder.jp/contests/";
-
-  const { data: html } = await axios.get(url, {
+  const client = createHttpClient({
     headers: {
-      "User-Agent":
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-      "Accept": "text/html",
+      Accept: "text/html",
       "Accept-Language": "ja,en;q=0.9",
     },
-    timeout: 15000,
   });
+
+  const { data: html } = await client.get<string>(url);
 
   return parseAtCoderContests(html);
 }

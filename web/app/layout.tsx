@@ -5,24 +5,11 @@
  * 包含顶部导航栏（NavBar）和底部页脚（Footer）。
  */
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
 import Link from "next/link";
 import NavBar from "@/components/nav-bar";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import "./globals.css";
-
-// 加载 Geist Sans 字体（无衬线）
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-// 加载 Geist Mono 字体（等宽，用于代码展示）
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
 
 // 全局 SEO 元数据
 export const metadata: Metadata = {
@@ -38,32 +25,111 @@ export default function RootLayout({
   return (
     <html
       lang="zh-CN"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className="h-full antialiased"
+      suppressHydrationWarning /* 主题脚本会在 hydration 前修改 html class，需抑制该属性差异警告 */
     >
+      <head>
+        {/* 首屏前应用主题，避免暗色模式闪烁 */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var t=localStorage.getItem("oier-tool-theme");if(t==="dark"||t==="light"){document.documentElement.classList.toggle("dark",t==="dark")}else if(window.matchMedia("(prefers-color-scheme: dark)").matches){document.documentElement.classList.add("dark")}}catch(e){}})();`,
+          }}
+        />
+      </head>
       <body className="min-h-full flex flex-col">
         <NavBar />
         <main className="flex-1">{children}</main>
         <Analytics />
         <SpeedInsights />
-        <footer className="border-t py-8 text-center text-sm text-muted-foreground">
-          <div className="mx-auto max-w-6xl px-4 sm:px-6">
-            <p className="font-medium">OierTool</p>
-            <p className="mt-1 text-xs text-muted-foreground/70">
-              算法竞赛选手的随身工具站
-            </p>
-            <p className="mt-2 text-xs text-muted-foreground/60">
-              MIT License · Built with Next.js &amp; PostgreSQL
-            </p>
-            <div className="mt-2 flex items-center justify-center gap-4">
-              <Link
-                href="https://github.com/MaoMaoXia1238/OierTool"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="hover:text-foreground transition-colors"
-              >
-                GitHub
-              </Link>
-              <span>Next.js 16 + Prisma 7</span>
+        <footer className="border-t bg-card/40 backdrop-blur-sm">
+          <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
+            <div className="grid gap-8 sm:grid-cols-3">
+              {/* 品牌信息 */}
+              <div>
+                <p className="flex items-center gap-2 text-base font-bold tracking-tight">
+                  <svg
+                    className="h-5 w-5 text-primary"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    strokeWidth={2}
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M6.75 7.5l3 2.25-3 2.25m4.5 0h3m-9 8.25h13.5A2.25 2.25 0 0021 18V6a2.25 2.25 0 00-2.25-2.25H5.25A2.25 2.25 0 003 6v12a2.25 2.25 0 002.25 2.25z"
+                    />
+                  </svg>
+                  OierTool
+                </p>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  算法竞赛选手的随身工具站，一站式管理各大 OJ 竞赛日程。
+                </p>
+                <div className="mt-3 flex items-center gap-2">
+                  {["Codeforces", "AtCoder", "Luogu", "NowCoder", "LeetCode"].map(
+                    (p) => (
+                      <span
+                        key={p}
+                        className="rounded-full border bg-muted/40 px-2 py-0.5 text-[10px] font-medium text-muted-foreground"
+                      >
+                        {p}
+                      </span>
+                    )
+                  )}
+                </div>
+              </div>
+
+              {/* 快速导航 */}
+              <div>
+                <p className="mb-3 text-sm font-semibold">快速导航</p>
+                <ul className="space-y-2 text-sm text-muted-foreground">
+                  <li>
+                    <Link href="/" className="transition-colors hover:text-foreground">
+                      首页
+                    </Link>
+                  </li>
+                  <li>
+                    <Link href="/calendar" className="transition-colors hover:text-foreground">
+                      竞赛日历
+                    </Link>
+                  </li>
+                  <li>
+                    <Link href="/docs" className="transition-colors hover:text-foreground">
+                      API 文档
+                    </Link>
+                  </li>
+                </ul>
+              </div>
+
+              {/* 开源信息 */}
+              <div>
+                <p className="mb-3 text-sm font-semibold">开源项目</p>
+                <ul className="space-y-2 text-sm text-muted-foreground">
+                  <li>
+                    <Link
+                      href="https://github.com/MaoMaoXia1238/OierTool"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="transition-colors hover:text-foreground"
+                    >
+                      GitHub 仓库
+                    </Link>
+                  </li>
+                  <li>
+                    <span className="cursor-default">MIT License</span>
+                  </li>
+                  <li>
+                    <span className="cursor-default">
+                      Next.js 16 · Prisma 7 · PostgreSQL
+                    </span>
+                  </li>
+                </ul>
+              </div>
+            </div>
+
+            <div className="mt-8 flex flex-col items-center justify-between gap-2 border-t pt-6 text-xs text-muted-foreground/70 sm:flex-row">
+              <p>© {new Date().getFullYear()} OierTool · 算法竞赛选手的随身工具站</p>
+              <p>Built with Next.js &amp; PostgreSQL · 数据每日自动同步</p>
             </div>
           </div>
         </footer>

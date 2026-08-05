@@ -87,11 +87,16 @@ describe("parseAtCoderContests", () => {
     expect(result).toEqual([]);
   });
 
-  it("应过滤掉 AtCoder Daily Training 每日练习比赛", () => {
+  it("应过滤掉 AtCoder 每日练习比赛", () => {
     const html = `<table><tbody>
       <tr>
         <td><a><time class="fixtime fixtime-full">2099-01-01 21:00:00+0900</time></a></td>
         <td><a href="/contests/daily-easy">AtCoder Daily Training EASY 2099/01/01 21:00 start</a></td>
+        <td>01:00</td>
+      </tr>
+      <tr>
+        <td><a><time class="fixtime fixtime-full">2099-01-01 20:00:00+0900</time></a></td>
+        <td><a href="/contests/awc0128">AtCoder Weekday Contest 0128 Beta</a></td>
         <td>01:00</td>
       </tr>
       <tr>
@@ -102,6 +107,7 @@ describe("parseAtCoderContests", () => {
     </tbody></table>`;
     const result = parseAtCoderContests(html);
     expect(result.some((c) => c.name.startsWith("AtCoder Daily Training"))).toBe(false);
+    expect(result.some((c) => c.name.startsWith("AtCoder Weekday Contest"))).toBe(false);
     expect(result.some((c) => c.name === "AtCoder Beginner Contest 999")).toBe(true);
   });
 });
