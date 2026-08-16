@@ -65,4 +65,10 @@ describe("ContestList", () => {
     // 不应同时显示空数据提示
     expect(screen.queryByText(/暂无比赛/)).not.toBeInTheDocument();
   });
+
+  it("showCountdown=false 时展示「已结束」而不是倒计时", () => {
+    render(<ContestList contests={mockContests} showCountdown={false} />);
+
+    expect(screen.getAllByText("已结束").length).toBeGreaterThan(0);
+  });
 });

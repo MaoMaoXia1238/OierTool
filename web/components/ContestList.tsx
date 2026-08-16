@@ -7,9 +7,13 @@
  *
  * 可通过 `now` 属性传入实时时间，实现倒计时动态刷新。
  */
+import Image from "next/image";
+import { CalendarX2, ExternalLink } from "lucide-react";
 import { type ContestData } from "@/components/ContestCard";
 import {
+  getPlatformColor,
   getPlatformLogo,
+  getLogoSize,
   getLogoSizeClass,
 } from "@/lib/platforms";
 import {
@@ -27,6 +31,8 @@ export interface ContestListProps {
   loading?: boolean;
   /** 当前时间（用于实时刷新倒计时，可选） */
   now?: Date;
+  /** 是否显示倒计时列；false 时显示“已结束” */
+  showCountdown?: boolean;
 }
 
 /** 表格列宽 */
@@ -60,9 +66,12 @@ function LogoCell({ src, platform }: { src?: string; platform: string }) {
   return (
     <div className={`flex w-20 shrink-0 items-center justify-center rounded-md border bg-muted/40 px-1.5 ${isLarge ? "h-12" : "h-10"}`}>
       {src ? (
-        <img
+        <Image
+          unoptimized
           src={src}
           alt={platform}
+          width={getLogoSize(platform)}
+          height={getLogoSize(platform)}
           className={`${getLogoSizeClass(platform)} w-auto max-w-[68px] object-contain`}
         />
       ) : (
@@ -97,9 +106,9 @@ function SkeletonRows() {
 function EmptyState() {
   return (
     <div className="flex flex-col items-center gap-3 py-20 text-center">
-      <svg className="h-12 w-12 text-muted-foreground/30" fill="none" viewBox="0 0 24 24" strokeWidth={1} stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
-      </svg>
+      <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-muted/60">
+        <CalendarX2 className="h-7 w-7 text-muted-foreground/50" />
+      </div>
       <p className="text-sm font-medium text-muted-foreground">暂无比赛</p>
       <p className="text-xs text-muted-foreground/60">爬虫定时更新，请稍后查看</p>
     </div>
@@ -109,7 +118,7 @@ function EmptyState() {
 /**
  * ContestList 组件
  */
-export function ContestList({ contests, loading = false, now }: ContestListProps) {
+export function ContestList({ contests, loading = false, now, showCountdown = true }: ContestListProps) {
   // 加载状态
   if (loading) {
     return (
@@ -160,6 +169,10 @@ export function ContestList({ contests, loading = false, now }: ContestListProps
                       {contest.name}
                     </div>
                   </div>
+                  <div className="mt-0.5 flex items-center gap-1.5 text-xs text-muted-foreground">
+                    <span className={`h-1.5 w-1.5 rounded-full ${getPlatformColor(contest.platform)}`} />
+                    {contest.platform}
+                  </div>
                 </div>
               </div>
 
@@ -173,38 +186,52 @@ export function ContestList({ contests, loading = false, now }: ContestListProps
                 {formatDuration(contest.duration)}
               </div>
 
-              {/* 倒计时 */}
+              {/* 倒计时 / 已结束状态 */}
               <div className="hidden sm:flex sm:items-center sm:justify-center">
-                <span
-                  className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold whitespace-nowrap ${getCountdownColor(countdown.severity)}`}
-                >
-                  {countdown.severity !== "normal" && (
-                    <span className="mr-1 h-1.5 w-1.5 rounded-full bg-current" />
-                  )}
-                  {countdown.text}
-                </span>
+                {showCountdown ? (
+                  <span
+                    className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold whitespace-nowrap ${getCountdownColor(countdown.severity)}`}
+                  >
+                    {countdown.severity !== "normal" && (
+                      <span className="mr-1 h-1.5 w-1.5 rounded-full bg-current" />
+                    )}
+                    {countdown.text}
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center rounded-full bg-muted px-2.5 py-0.5 text-xs font-semibold text-muted-foreground">
+                    已结束
+                  </span>
+                )}
               </div>
 
               {/* 操作按钮 */}
               <div className="flex items-center justify-center gap-2">
-                <a href={contest.url} target="_blank" rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 rounded-lg border px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:border-primary hover:text-primary">
+                <a
+                  href={contest.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  title={`前往 ${contest.platform} 参赛`}
+                  className="inline-flex items-center gap-1 rounded-lg border px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:border-primary hover:text-primary"
+                >
                   参赛
-                  <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
-                  </svg>
+                  <ExternalLink className="h-3 w-3" />
                 </a>
 
                 {/* 移动端 */}
                 <div className="ml-auto flex items-center gap-3 text-xs sm:hidden">
                   <span className="text-muted-foreground">{formatStartTime(contest.startTime)}</span>
-                  <span className={
-                    countdown.severity === "danger" ? "font-semibold text-red-600" :
-                    countdown.severity === "warning" ? "font-semibold text-yellow-600" :
-                    "font-medium text-primary"
-                  }>
-                    {countdown.text}
-                  </span>
+                  <span className="text-muted-foreground/70">{formatDuration(contest.duration)}</span>
+                  {showCountdown ? (
+                    <span className={
+                      countdown.severity === "danger" ? "font-semibold text-red-600" :
+                      countdown.severity === "warning" ? "font-semibold text-yellow-600" :
+                      "font-medium text-primary"
+                    }>
+                      {countdown.text}
+                    </span>
+                  ) : (
+                    <span className="font-medium text-muted-foreground">已结束</span>
+                  )}
                 </div>
               </div>
             </div>

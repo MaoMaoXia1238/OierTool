@@ -41,6 +41,13 @@ export function getLogoSizeClass(platform: string): string {
   return LARGE_LOGO_PLATFORMS.has(platform) ? "h-8 w-8" : "h-6 w-6";
 }
 
+/**
+ * 获取平台 Logo 的像素尺寸（配合 next/image 的 width/height 使用）。
+ */
+export function getLogoSize(platform: string): number {
+  return LARGE_LOGO_PLATFORMS.has(platform) ? 32 : 24;
+}
+
 /** 平台名称 → 主题色（用于徽章、指示点等 UI 元素） */
 export const PLATFORM_COLORS: Record<string, string> = {
   Codeforces: "text-blue-600 dark:text-blue-400 bg-blue-100 dark:bg-blue-500/15 border-blue-500/20",

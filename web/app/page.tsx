@@ -4,6 +4,8 @@
  * 比赛预览直接从数据库读取（动态渲染），数据库不可用时优雅降级隐藏该区块。
  */
 import Link from "next/link";
+import Image from "next/image";
+import { CountdownBadge } from "@/components/countdown-badge";
 import {
   ArrowRight,
   CalendarDays,
@@ -20,14 +22,9 @@ import { prisma } from "@/lib/prisma";
 import {
   getPlatformColor,
   getPlatformLogo,
-  getLogoSizeClass,
+  getLogoSize,
 } from "@/lib/platforms";
-import {
-  formatStartTime,
-  getCountdown,
-  getCountdownColor,
-  type Severity,
-} from "@/lib/utils";
+import { formatStartTime } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
@@ -188,10 +185,13 @@ export default async function Home() {
               key={p}
               className="flex items-center gap-2 rounded-full border bg-card/80 px-3.5 py-1.5 text-xs font-medium text-muted-foreground shadow-sm backdrop-blur-sm"
             >
-              <img
-                src={getPlatformLogo(p)}
+              <Image
+                unoptimized
+                src={getPlatformLogo(p)!}
                 alt={p}
-                className={`${getLogoSizeClass(p)} object-contain`}
+                width={getLogoSize(p)}
+                height={getLogoSize(p)}
+                className="object-contain"
               />
               {p}
             </span>
@@ -210,7 +210,7 @@ export default async function Home() {
           <div className="flex flex-col items-center gap-1.5 text-center">
             <Zap className="h-5 w-5 text-amber-500" />
             <span className="text-xl font-bold text-foreground sm:text-2xl">
-              {total > 0 ? `${total}+` : "--"}
+              {total > 0 ? `${total}` : "--"}
             </span>
             <span className="text-sm text-muted-foreground">即将开始</span>
           </div>
@@ -250,7 +250,6 @@ export default async function Home() {
 
           <div className="grid gap-4 sm:grid-cols-3">
             {contests.map((contest) => {
-              const countdown = getCountdown(contest.startTime);
               return (
                 <a
                   key={contest.id}
@@ -263,21 +262,17 @@ export default async function Home() {
                     <span
                       className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-semibold ${getPlatformColor(contest.platform)}`}
                     >
-                      <img
-                        src={getPlatformLogo(contest.platform)}
+                      <Image
+                        unoptimized
+                        src={getPlatformLogo(contest.platform)!}
                         alt={contest.platform}
-                        className={`${getLogoSizeClass(contest.platform)} object-contain`}
+                        width={getLogoSize(contest.platform)}
+                        height={getLogoSize(contest.platform)}
+                        className="object-contain"
                       />
                       {contest.platform}
                     </span>
-                    <span
-                      className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold whitespace-nowrap ${getCountdownColor(countdown.severity as Severity)}`}
-                    >
-                      {countdown.severity !== "normal" && (
-                        <span className="h-1.5 w-1.5 rounded-full bg-current" />
-                      )}
-                      {countdown.text}
-                    </span>
+                    <CountdownBadge startTime={contest.startTime} />
                   </div>
                   <h3 className="mb-2 line-clamp-2 text-sm font-semibold leading-snug text-foreground group-hover:text-primary">
                     {contest.name}

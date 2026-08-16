@@ -6,8 +6,9 @@
  * - 距离比赛开始的倒计时
  * - 跳转链接
  */
+import Image from "next/image";
 import { Clock } from "lucide-react";
-import { getPlatformColor, getPlatformLogo, getLogoSizeClass } from "@/lib/platforms";
+import { getPlatformColor, getPlatformLogo, getLogoSize } from "@/lib/platforms";
 import {
   formatDuration,
   formatStartTime,
@@ -41,10 +42,13 @@ export function ContestCard({ contest }: ContestCardProps) {
           className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-semibold ${getPlatformColor(platform)}`}
         >
           {logoSrc && (
-            <img
+            <Image
+              unoptimized
               src={logoSrc}
               alt={`${platform} Logo`}
-              className={`${getLogoSizeClass(platform)} object-contain`}
+              width={getLogoSize(platform)}
+              height={getLogoSize(platform)}
+              className="object-contain"
             />
           )}
           {platform}

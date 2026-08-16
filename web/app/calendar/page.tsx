@@ -5,44 +5,63 @@
  */
 "use client";
 
+import Image from "next/image";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { CalendarDays, CalendarPlus, Check, History, Info, RefreshCw } from "lucide-react";
+import {
+  CalendarDays,
+  CalendarPlus,
+  Check,
+  History,
+  Info,
+  LayoutGrid,
+  PlayCircle,
+  RefreshCw,
+} from "lucide-react";
 import { ContestList } from "@/components/ContestList";
 import { PushSubscribeButton } from "@/components/push-subscribe-button";
 import { HintTooltip } from "@/components/hint-tooltip";
+import { getPlatformLogo, getLogoSize, PLATFORM_LOGOS } from "@/lib/platforms";
 import type { ContestData } from "@/components/ContestCard";
 
 /** 倒计时自动刷新间隔（毫秒） */
 const COUNTDOWN_REFRESH_MS = 30_000;
 
 /** 竞赛状态筛选 */
-type ContestStatus = "upcoming" | "finished";
+type ContestStatus = "upcoming" | "ongoing" | "finished";
+
+/** 平台筛选项：全部 + 已支持平台（不依赖当前返回数据，空数据时筛选栏也不会消失） */
+const ALL_PLATFORMS = ["全部", ...Object.keys(PLATFORM_LOGOS).sort()];
+
+/** 日历页一次最多加载的比赛数（API 上限） */
+const CALENDAR_PAGE_LIMIT = 500;
 
 /**
  * 竞赛日历页面组件
- * 从 API 获取竞赛数据，支持按平台筛选、手动刷新和实时倒计时。
+ * 从 API 获取竞赛数据，支持按平台/状态筛选、手动刷新和实时倒计时。
  */
 export default function CalendarPage() {
-  const [contests, setContests] = useState<ContestData[]>([]); // 所有比赛数据
-  const [activePlatform, setActivePlatform] = useState<string>("全部"); // 当前选中平台
-  const [status, setStatus] = useState<ContestStatus>("upcoming"); // 当前状态筛选
-  const [loading, setLoading] = useState(true); // 加载状态
-  const [error, setError] = useState(false); // 请求失败状态
-  const [now, setNow] = useState(() => new Date()); // 实时时间（驱动倒计时刷新）
-  const [lastUpdated, setLastUpdated] = useState<string>(""); // 最近更新时间
-  const [refreshKey, setRefreshKey] = useState(0); // 手动刷新计数
-  const [subscribed, setSubscribed] = useState(false); // 订阅链接已复制
+  const [contests, setContests] = useState<ContestData[]>([]);
+  const [activePlatform, setActivePlatform] = useState<string>("全部");
+  const [status, setStatus] = useState<ContestStatus>("upcoming");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+  const [now, setNow] = useState(() => new Date());
+  const [lastUpdated, setLastUpdated] = useState<string>("");
+  const [refreshKey, setRefreshKey] = useState(0);
+  const [subscribed, setSubscribed] = useState(false);
 
   /**
-   * 拉取竞赛数据（setState 均在异步回调中执行）
+   * 拉取竞赛数据。平台筛选在客户端进行，因此仅 status/refreshKey
+   * 变化时才需要重新请求。
    */
   useEffect(() => {
     let cancelled = false;
 
     async function run() {
       try {
-        // 按状态拉取全部平台数据，平台筛选在客户端进行（保持 Tab 列表完整）
-        const res = await fetch(`/api/contests?status=${status}`);
+        const res = await fetch(
+          `/api/contests?status=${status}&limit=${CALENDAR_PAGE_LIMIT}`
+        );
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data: ContestData[] = await res.json();
         if (cancelled) return;
@@ -67,7 +86,7 @@ export default function CalendarPage() {
     return () => {
       cancelled = true;
     };
-  }, [refreshKey, status, activePlatform]);
+  }, [refreshKey, status]);
 
   // 每 30 秒刷新倒计时
   useEffect(() => {
@@ -81,12 +100,22 @@ export default function CalendarPage() {
     setRefreshKey((k) => k + 1);
   }, []);
 
+  /** 切换状态时立即进入加载态，避免展示上一状态的数据 */
+  const handleStatusChange = (next: ContestStatus) => {
+    if (next === status) return;
+    setStatus(next);
+    setLoading(true);
+  };
+
   /**
    * 复制订阅日历链接（带当前平台筛选）
    */
   const handleSubscribe = useCallback(async () => {
     const base = `${window.location.origin}/api/calendar.ics`;
-    const url = activePlatform === "全部" ? base : `${base}?platform=${activePlatform}`;
+    const url =
+      activePlatform === "全部"
+        ? base
+        : `${base}?platform=${encodeURIComponent(activePlatform)}`;
     try {
       await navigator.clipboard.writeText(url);
       setSubscribed(true);
@@ -96,13 +125,7 @@ export default function CalendarPage() {
     }
   }, [activePlatform]);
 
-  // 从比赛数据中提取所有不重复的平台，按字典序排列
-  const platforms = useMemo(
-    () => ["全部", ...[...new Set(contests.map((c) => c.platform))].sort()],
-    [contests]
-  );
-
-  // 筛选后的比赛（客户端过滤，服务端仅按状态返回全部数据）
+  // 筛选后的比赛（客户端过滤，服务端仅按状态返回数据）
   const filtered = useMemo(
     () =>
       activePlatform === "全部"
@@ -114,14 +137,14 @@ export default function CalendarPage() {
   // 各平台比赛数量（用于筛选按钮角标）
   const platformCounts = useMemo(() => {
     const counts: Record<string, number> = {};
-    for (const p of platforms) {
-      counts[p] =
-        p === "全部"
+    for (const platform of ALL_PLATFORMS) {
+      counts[platform] =
+        platform === "全部"
           ? contests.length
-          : contests.filter((c) => c.platform === p).length;
+          : contests.filter((c) => c.platform === platform).length;
     }
     return counts;
-  }, [platforms, contests]);
+  }, [contests]);
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-8">
@@ -137,13 +160,13 @@ export default function CalendarPage() {
               ? "正在同步各平台竞赛数据..."
               : error
                 ? "数据加载失败，请检查网络后重试"
-                : status === "upcoming"
-                  ? filtered.length > 0
-                    ? `共 ${filtered.length} 场比赛即将开始 · 倒计时每 30 秒自动刷新`
-                    : "当前没有即将开始的比赛"
-                  : filtered.length > 0
-                    ? `共 ${filtered.length} 场已结束的比赛`
-                    : "暂无已结束的比赛记录"}
+                : filtered.length > 0
+                  ? `共 ${filtered.length} 场比赛 · 倒计时每 30 秒自动刷新`
+                  : status === "upcoming"
+                    ? "当前没有即将开始的比赛"
+                    : status === "ongoing"
+                      ? "当前没有进行中的比赛"
+                      : "暂无已结束的比赛记录"}
           </p>
         </div>
 
@@ -191,15 +214,16 @@ export default function CalendarPage() {
         </div>
       </div>
 
-      {/* 状态 Tab：即将开始 / 已结束 */}
+      {/* 状态 Tab：未开始 / 进行中 / 已结束 */}
       <div className="mb-2 flex gap-2">
         <button
           type="button"
-          onClick={() => setStatus("upcoming")}
-          className={`inline-flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-medium transition-all ${
+          onClick={() => handleStatusChange("upcoming")}
+          aria-pressed={status === "upcoming"}
+          className={`inline-flex items-center gap-1.5 rounded-xl px-4 py-2 text-sm font-medium transition-all ${
             status === "upcoming"
-              ? "bg-primary text-primary-foreground shadow-sm"
-              : "bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground"
+              ? "bg-primary text-primary-foreground shadow-md shadow-primary/10"
+              : "bg-card text-muted-foreground shadow-sm hover:bg-muted/70 hover:text-foreground"
           }`}
         >
           <CalendarDays className="h-4 w-4" />
@@ -207,11 +231,25 @@ export default function CalendarPage() {
         </button>
         <button
           type="button"
-          onClick={() => setStatus("finished")}
-          className={`inline-flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-medium transition-all ${
+          onClick={() => handleStatusChange("ongoing")}
+          aria-pressed={status === "ongoing"}
+          className={`inline-flex items-center gap-1.5 rounded-xl px-4 py-2 text-sm font-medium transition-all ${
+            status === "ongoing"
+              ? "bg-primary text-primary-foreground shadow-md shadow-primary/10"
+              : "bg-card text-muted-foreground shadow-sm hover:bg-muted/70 hover:text-foreground"
+          }`}
+        >
+          <PlayCircle className="h-4 w-4" />
+          进行中
+        </button>
+        <button
+          type="button"
+          onClick={() => handleStatusChange("finished")}
+          aria-pressed={status === "finished"}
+          className={`inline-flex items-center gap-1.5 rounded-xl px-4 py-2 text-sm font-medium transition-all ${
             status === "finished"
-              ? "bg-primary text-primary-foreground shadow-sm"
-              : "bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground"
+              ? "bg-primary text-primary-foreground shadow-md shadow-primary/10"
+              : "bg-card text-muted-foreground shadow-sm hover:bg-muted/70 hover:text-foreground"
           }`}
         >
           <History className="h-4 w-4" />
@@ -232,28 +270,46 @@ export default function CalendarPage() {
 
       {/* 平台筛选 Tab */}
       <div className="mb-6 flex flex-wrap gap-2">
-        {platforms.map((platform) => (
-          <button
-            key={platform}
-            onClick={() => setActivePlatform(platform)}
-            className={`inline-flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-medium transition-all ${
-              activePlatform === platform
-                ? "bg-primary text-primary-foreground shadow-sm"
-                : "bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground"
-            }`}
-          >
-            {platform}
-            <span
-              className={`rounded-full px-1.5 py-0.5 text-[10px] font-bold leading-none ${
-                activePlatform === platform
-                  ? "bg-primary-foreground/20 text-primary-foreground"
-                  : "bg-background/70 text-muted-foreground"
+        {ALL_PLATFORMS.map((platform) => {
+          const isActive = activePlatform === platform;
+          const logoSrc = getPlatformLogo(platform);
+          return (
+            <button
+              key={platform}
+              type="button"
+              onClick={() => setActivePlatform(platform)}
+              aria-pressed={isActive}
+              className={`inline-flex items-center gap-2 rounded-xl border px-3.5 py-2 text-sm font-medium transition-all ${
+                isActive
+                  ? "border-primary bg-primary text-primary-foreground shadow-md shadow-primary/10"
+                  : "border-transparent bg-card text-muted-foreground shadow-sm hover:-translate-y-0.5 hover:border-primary/30 hover:text-foreground"
               }`}
             >
-              {platformCounts[platform] ?? 0}
-            </span>
-          </button>
-        ))}
+              {platform === "全部" ? (
+                <LayoutGrid className="h-4 w-4" />
+              ) : logoSrc ? (
+                <Image
+                  unoptimized
+                  src={logoSrc}
+                  alt=""
+                  width={getLogoSize(platform) > 24 ? 18 : 16}
+                  height={getLogoSize(platform) > 24 ? 18 : 16}
+                  className="object-contain"
+                />
+              ) : null}
+              {platform}
+              <span
+                className={`rounded-full px-1.5 py-0.5 text-[10px] font-bold leading-none tabular-nums ${
+                  isActive
+                    ? "bg-primary-foreground/20 text-primary-foreground"
+                    : "bg-muted text-muted-foreground"
+                }`}
+              >
+                {platformCounts[platform] ?? 0}
+              </span>
+            </button>
+          );
+        })}
       </div>
 
       {/* 请求失败提示 */}
@@ -277,6 +333,7 @@ export default function CalendarPage() {
         contests={filtered}
         loading={loading && contests.length === 0}
         now={now}
+        showCountdown={status !== "finished"}
       />
     </div>
   );

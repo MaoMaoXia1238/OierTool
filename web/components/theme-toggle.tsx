@@ -3,7 +3,7 @@
  * 在亮色 / 暗色模式之间切换，偏好持久化到 localStorage 与 cookie。
  * - localStorage：客户端即时读取（useSyncExternalStore，跨标签页同步）
  * - cookie：服务端渲染 html class 使用，避免闪烁与内联脚本
- * 未手动设置时跟随系统主题。
+ * 未手动设置时跟随系统主题，并监听系统主题变化实时更新。
  */
 "use client";
 
@@ -22,15 +22,45 @@ const THEME_CHANGE_EVENT = "oier-tool-theme-change";
 /** cookie 有效期（1 年） */
 const COOKIE_MAX_AGE = 60 * 60 * 24 * 365;
 
+function isTheme(value: string | null | undefined): value is Theme {
+  return value === "light" || value === "dark";
+}
+
+/** 读取 localStorage（隐私模式/禁用存储时静默失败） */
+function readStoredTheme(): Theme | null {
+  try {
+    const stored = window.localStorage.getItem(STORAGE_KEY);
+    return isTheme(stored) ? stored : null;
+  } catch {
+    return null;
+  }
+}
+
+/** 从 cookie 读取主题偏好 */
+function readCookieTheme(): Theme | null {
+  const cookie = document.cookie
+    .split("; ")
+    .find((c) => c.startsWith(`${STORAGE_KEY}=`));
+  if (!cookie) return null;
+  const value = cookie.slice(cookie.indexOf("=") + 1);
+  return isTheme(value) ? value : null;
+}
+
 /**
- * 订阅主题变化：跨标签页靠 storage 事件，同标签页靠自定义事件
+ * 订阅主题变化：
+ * - 跨标签页靠 storage 事件
+ * - 同标签页靠自定义事件
+ * - 未手动设置时跟随系统主题变化
  */
 function subscribe(callback: () => void): () => void {
+  const media = window.matchMedia("(prefers-color-scheme: dark)");
   window.addEventListener("storage", callback);
   window.addEventListener(THEME_CHANGE_EVENT, callback);
+  media.addEventListener("change", callback);
   return () => {
     window.removeEventListener("storage", callback);
     window.removeEventListener(THEME_CHANGE_EVENT, callback);
+    media.removeEventListener("change", callback);
   };
 }
 
@@ -39,15 +69,10 @@ function subscribe(callback: () => void): () => void {
  */
 function getTheme(): Theme {
   if (typeof window === "undefined") return "light";
-  const stored = localStorage.getItem(STORAGE_KEY);
-  if (stored === "light" || stored === "dark") return stored;
-  const cookie = document.cookie
-    .split("; ")
-    .find((c) => c.startsWith(`${STORAGE_KEY}=`));
-  if (cookie) {
-    const value = cookie.split("=")[1];
-    if (value === "light" || value === "dark") return value;
-  }
+  const stored = readStoredTheme();
+  if (stored) return stored;
+  const cookieTheme = readCookieTheme();
+  if (cookieTheme) return cookieTheme;
   return window.matchMedia("(prefers-color-scheme: dark)").matches
     ? "dark"
     : "light";
@@ -57,7 +82,11 @@ function getTheme(): Theme {
  * 写入 cookie（服务端渲染下次请求时使用）
  */
 function writeCookie(theme: Theme): void {
-  document.cookie = `${STORAGE_KEY}=${theme}; path=/; max-age=${COOKIE_MAX_AGE}; SameSite=Lax`;
+  try {
+    document.cookie = `${STORAGE_KEY}=${theme}; path=/; max-age=${COOKIE_MAX_AGE}; SameSite=Lax`;
+  } catch {
+    // cookie 写入失败不影响本次主题切换
+  }
 }
 
 export default function ThemeToggle() {
@@ -71,7 +100,13 @@ export default function ThemeToggle() {
 
   const toggle = () => {
     const next: Theme = theme === "dark" ? "light" : "dark";
-    localStorage.setItem(STORAGE_KEY, next);
+    try {
+      window.localStorage.setItem(STORAGE_KEY, next);
+    } catch {
+      // localStorage 不可用时退化为 cookie + 当前会话主题
+      writeCookie(next);
+      document.documentElement.classList.toggle("dark", next === "dark");
+    }
     // 同标签页内不会触发 storage 事件，需手动通知订阅者立即刷新
     window.dispatchEvent(new Event(THEME_CHANGE_EVENT));
   };
@@ -83,11 +118,22 @@ export default function ThemeToggle() {
       aria-label={theme === "dark" ? "切换到亮色模式" : "切换到暗色模式"}
       className="inline-flex h-9 w-9 items-center justify-center rounded-lg border bg-card text-muted-foreground transition-all hover:border-primary/40 hover:text-foreground active:scale-95"
     >
-      {theme === "dark" ? (
-        <Sun className="h-4 w-4" />
-      ) : (
-        <Moon className="h-4 w-4" />
-      )}
+      <span className="relative block h-4 w-4 overflow-hidden">
+        <Sun
+          className={`absolute inset-0 h-4 w-4 transition-all duration-300 ${
+            theme === "dark"
+              ? "translate-y-0 rotate-0 opacity-100"
+              : "translate-y-2 rotate-45 opacity-0"
+          }`}
+        />
+        <Moon
+          className={`absolute inset-0 h-4 w-4 transition-all duration-300 ${
+            theme === "dark"
+              ? "-translate-y-2 -rotate-45 opacity-0"
+              : "translate-y-0 rotate-0 opacity-100"
+          }`}
+        />
+      </span>
     </button>
   );
 }

@@ -7,7 +7,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Menu, X } from "lucide-react";
 import ThemeToggle from "@/components/theme-toggle";
 
@@ -30,6 +30,13 @@ function GithubIcon({ className }: { className?: string }) {
 export default function NavBar() {
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
+
+  // 浏览器返回/前进时关闭移动端菜单；普通导航由 Link 的 onClick 负责关闭。
+  useEffect(() => {
+    const handlePopState = () => setMenuOpen(false);
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, []);
 
   const isActive = (href: string) =>
     href === "/" ? pathname === "/" : pathname.startsWith(href);
@@ -69,6 +76,7 @@ export default function NavBar() {
               <Link
                 key={href}
                 href={href}
+                aria-current={active ? "page" : undefined}
                 className={`relative rounded-lg px-3.5 py-2 text-sm font-medium transition-colors ${
                   active
                     ? "bg-primary/10 text-primary"
@@ -120,6 +128,7 @@ export default function NavBar() {
                   key={href}
                   href={href}
                   onClick={() => setMenuOpen(false)}
+                  aria-current={active ? "page" : undefined}
                   className={`rounded-lg px-3.5 py-2.5 text-sm font-medium transition-colors ${
                     active
                       ? "bg-primary/10 text-primary"
