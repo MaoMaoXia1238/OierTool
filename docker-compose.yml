@@ -28,6 +28,9 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.web
+      args:
+        # NEXT_PUBLIC_VAPID_PUBLIC_KEY 必须构建期注入，运行时设置不会生效
+        NEXT_PUBLIC_VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY:-}
     restart: unless-stopped
     ports:
       - "3000:3000"

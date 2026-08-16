@@ -19,7 +19,7 @@ const API_ENDPOINTS = [
     description: "返回竞赛列表（支持平台筛选、状态筛选与数量限制）",
     params: [
       { name: "platform", type: "string", required: false, description: "按平台筛选，可选值：\"Codeforces\"、\"AtCoder\"、\"Luogu\"、\"NowCoder\"、\"LeetCode\"" },
-      { name: "status", type: "string", required: false, description: "比赛状态：upcoming（默认，即将开始）/ finished（已结束，倒序）" },
+      { name: "status", type: "string", required: false, description: "比赛状态：upcoming（默认，未开始）/ ongoing（进行中）/ finished（已结束，倒序）" },
       { name: "limit", type: "number", required: false, description: "返回数量上限，取值范围 1-500，默认 100" },
     ],
     successExample: `[

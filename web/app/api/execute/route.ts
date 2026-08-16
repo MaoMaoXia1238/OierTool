@@ -44,13 +44,26 @@ const RATE_LIMIT_MAX = 10;
 /**
  * 内存型按 IP 限流（实例内有效）。
  * 注意：serverless 多实例不共享状态，此为尽力而为的防误触措施。
+ * 每次调用顺带清理过期窗口，避免 Docker 等长驻进程内 Map 无限增长。
  */
 const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
 
+function getClientIp(request: Request): string {
+  return (
+    request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+    request.headers.get("x-real-ip")?.trim() ||
+    "unknown"
+  );
+}
+
 function isRateLimited(ip: string): boolean {
   const now = Date.now();
+  for (const [key, entry] of rateLimitMap) {
+    if (now > entry.resetAt) rateLimitMap.delete(key);
+  }
+
   const entry = rateLimitMap.get(ip);
-  if (!entry || now > entry.resetAt) {
+  if (!entry) {
     rateLimitMap.set(ip, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
     return false;
   }
@@ -76,10 +89,7 @@ function decode(value: string | null | undefined): string | null {
 export async function POST(request: Request) {
   try {
     // 按 IP 简单限流
-    const ip =
-      request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
-      "unknown";
-    if (isRateLimited(ip)) {
+    if (isRateLimited(getClientIp(request))) {
       return NextResponse.json(
         { error: "请求过于频繁，请稍后再试" },
         { status: 429 }

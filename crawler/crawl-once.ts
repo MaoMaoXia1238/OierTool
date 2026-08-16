@@ -21,8 +21,11 @@ async function main(): Promise<void> {
   }
 
   console.log(
-    `[Crawl] 写入: 总数=${pipeline.total}, 新增=${pipeline.inserted}, 跳过(重复)=${pipeline.skipped}`
+    `[Crawl] 写入: 总数=${pipeline.total}, 新增=${pipeline.inserted}, 跳过(重复)=${pipeline.skipped}, 非法丢弃=${pipeline.invalid}`
   );
+  for (const [platform, message] of Object.entries(pipeline.errors)) {
+    console.error(`[Crawl] ${platform} 写库失败: ${message}`);
+  }
   if (cleanedUp > 0) {
     console.log(`[Crawl] 清理过期比赛: ${cleanedUp} 条`);
   }

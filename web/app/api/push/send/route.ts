@@ -39,6 +39,51 @@ function isAuthorized(request: Request): boolean {
 }
 
 /**
+ * 发送单场比赛的提醒。
+ *
+ * 使用原子 updateMany 抢占 reminderSentAt，避免 15 分钟定时任务并发时重复推送；
+ * 推送全部失败（例如上游暂时不可用）时回滚标记，下一轮定时任务可以重试。
+ */
+async function sendContestReminder(contestId: string) {
+  const contest = await prisma.contest.findUnique({ where: { id: contestId } });
+  if (!contest) return { kind: "not-found" } as const;
+
+  const claimed = await prisma.contest.updateMany({
+    where: { id: contestId, reminderSentAt: null },
+    data: { reminderSentAt: new Date() },
+  });
+  if (claimed.count === 0) return { kind: "already-sent" } as const;
+
+  try {
+    const result = await sendPushNotification({
+      title: `${contest.platform} · ${contest.name}`,
+      body: `比赛将于 ${formatStartTime(contest.startTime)} 开始，抓紧准备！`,
+      url: contest.url ?? undefined,
+    });
+
+    // sent 和 failed 都为 0 表示当前没有订阅；保留已发送标记，避免每轮都空跑。
+    // 有订阅但全部发送失败时回滚标记，便于下一轮重试。
+    if (result.sent === 0 && result.failed > 0) {
+      await prisma.contest.update({
+        where: { id: contestId },
+        data: { reminderSentAt: null },
+      });
+    }
+
+    return { kind: "sent", result } as const;
+  } catch (error) {
+    // 发送阶段异常时也回滚标记，避免一次 500 导致提醒永久丢失。
+    await prisma.contest
+      .update({
+        where: { id: contestId },
+        data: { reminderSentAt: null },
+      })
+      .catch(() => undefined);
+    throw error;
+  }
+}
+
+/**
  * 处理 POST /api/push/send
  */
 export async function POST(request: Request) {
@@ -55,28 +100,15 @@ export async function POST(request: Request) {
 
     // 按 contestId 生成提醒内容
     if (body.contestId) {
-      const contest = await prisma.contest.findUnique({
-        where: { id: body.contestId },
-      });
-      if (!contest) {
+      const outcome = await sendContestReminder(body.contestId);
+
+      if (outcome.kind === "not-found") {
         return NextResponse.json({ error: "比赛不存在" }, { status: 404 });
       }
-      if (contest.reminderSentAt) {
+      if (outcome.kind === "already-sent") {
         return NextResponse.json({ ok: true, skipped: "already-sent" });
       }
-
-      // 先标记已提醒（避免并发重复），再发送
-      await prisma.contest.update({
-        where: { id: contest.id },
-        data: { reminderSentAt: new Date() },
-      });
-
-      const result = await sendPushNotification({
-        title: `${contest.platform} · ${contest.name}`,
-        body: `比赛将于 ${formatStartTime(contest.startTime)} 开始，抓紧准备！`,
-        url: contest.url ?? undefined,
-      });
-      return NextResponse.json({ ok: true, ...result });
+      return NextResponse.json({ ok: true, ...outcome.result });
     }
 
     // 自定义通知内容

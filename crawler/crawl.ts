@@ -16,6 +16,7 @@ import {
   getPrisma,
   type ContestInput,
   type PipelineResult,
+  type PlatformPipelineResult,
 } from "./pipeline";
 
 /** 提醒窗口：比赛开始前 15 分钟内触发 Web Push 提醒 */
@@ -52,7 +53,9 @@ const CRAWL_TASKS: CrawlTask[] = [
  * @returns 各平台爬取结果数组
  */
 export async function crawlAllPlatforms(): Promise<PlatformCrawlResult[]> {
-  const settled = await Promise.allSettled(
+  // 每个 task.fetch 内部已经把 rejection 转换为 PlatformCrawlResult，
+  // 因此这里直接 Promise.all 即可；allSettled 的兜底分支属于不可达死代码。
+  return Promise.all(
     CRAWL_TASKS.map((task) =>
       task.fetch().then(
         (contests): PlatformCrawlResult => ({
@@ -66,12 +69,6 @@ export async function crawlAllPlatforms(): Promise<PlatformCrawlResult[]> {
         })
       )
     )
-  );
-
-  return settled.map((result) =>
-    result.status === "fulfilled"
-      ? result.value
-      : { platform: "Unknown", contests: [], error: String(result.reason) }
   );
 }
 
@@ -95,28 +92,40 @@ async function recordCrawlLogs(
 ): Promise<void> {
   const client = getPrisma();
   const now = new Date();
+  const emptyStats: PlatformPipelineResult = { total: 0, inserted: 0, skipped: 0 };
+
+  const platformLogs = results.map((r) => {
+    const stats = pipeline.platforms[r.platform] ?? emptyStats;
+    const failed = Boolean(r.error || stats.error);
+    return {
+      platform: r.platform,
+      status: failed ? "error" : "success",
+      inserted: stats.inserted,
+      skipped: stats.skipped,
+      total: stats.total,
+      error: r.error ?? stats.error ?? null,
+      durationMs,
+      createdAt: now,
+    };
+  });
+
+  // 爬取失败或写库失败都算该平台失败；全部失败时汇总状态也必须为 error。
+  const allFailed =
+    results.length > 0 && platformLogs.every((log) => log.status === "error");
 
   await client.crawlLog.createMany({
     data: [
-      // 各平台日志
-      ...results.map((r) => ({
-        platform: r.platform,
-        status: r.error ? "error" : "success",
-        inserted: 0,
-        skipped: 0,
-        total: r.contests.length,
-        error: r.error ?? null,
-        durationMs,
-        createdAt: now,
-      })),
-      // 汇总日志
+      ...platformLogs,
       {
         platform: "ALL",
-        status: "success",
+        status: allFailed ? "error" : "success",
         inserted: pipeline.inserted,
         skipped: pipeline.skipped,
         total: pipeline.total,
-        error: null,
+        error: allFailed
+          ? (platformLogs.find((log) => log.error)?.error ??
+            "all platforms failed")
+          : null,
         durationMs,
         createdAt: now,
       },
@@ -151,7 +160,7 @@ async function sendContestReminders(context = "[Crawl]"): Promise<number> {
     // 查询 15 分钟内开始且未提醒过的比赛
     const contests = await client.contest.findMany({
       where: {
-        startTime: { gt: now, lt: windowEnd },
+        startTime: { gt: now, lte: windowEnd },
         reminderSentAt: null,
       },
       select: { id: true },

@@ -18,6 +18,9 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
 # 生成 Prisma Client 并构建生产包
+# NEXT_PUBLIC_* 会在 Next.js 构建期被内联，必须在 build 前注入
+ARG NEXT_PUBLIC_VAPID_PUBLIC_KEY
+ENV NEXT_PUBLIC_VAPID_PUBLIC_KEY=$NEXT_PUBLIC_VAPID_PUBLIC_KEY
 RUN npx prisma generate
 RUN npm run build -w web
 

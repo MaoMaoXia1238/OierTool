@@ -3,7 +3,7 @@
  * GET /api/contests —— 返回竞赛列表。
  * 支持参数：
  *   platform  - 平台筛选
- *   status    - upcoming（默认，即将开始）/ finished（已结束，倒序）
+ *   status    - upcoming（默认，未开始）/ ongoing（进行中）/ finished（已结束，倒序）
  *   limit     - 数量上限（1-500，默认 100）
  * 响应带 CDN 缓存头（5 分钟 + stale-while-revalidate）。
  */
@@ -13,11 +13,13 @@ import { prisma } from "@/lib/prisma";
 import { PLATFORM_LOGOS } from "@/lib/platforms";
 import { toContestData } from "@/lib/contest";
 
+type ContestStatus = "upcoming" | "ongoing" | "finished";
+
 /** 支持的平台白名单（与平台 Logo 映射保持一致） */
 const ALLOWED_PLATFORMS = new Set(Object.keys(PLATFORM_LOGOS));
 
 /** 支持的状态筛选值 */
-const ALLOWED_STATUSES = new Set(["upcoming", "finished"]);
+const ALLOWED_STATUSES = new Set<ContestStatus>(["upcoming", "ongoing", "finished"]);
 
 /** 默认 / 最大返回数量 */
 const DEFAULT_LIMIT = 100;
@@ -27,6 +29,24 @@ const MAX_LIMIT = 500;
 const CACHE_HEADERS = {
   "Cache-Control": "public, s-maxage=300, stale-while-revalidate=3600",
 };
+
+/**
+ * 根据状态生成 Prisma 查询条件。
+ * 以 endTime 判断已结束，避免把“进行中”的比赛错误归入已结束。
+ */
+function buildWhere(now: Date, status: ContestStatus, platform?: string | null) {
+  const timeFilter =
+    status === "upcoming"
+      ? { startTime: { gt: now } }
+      : status === "ongoing"
+        ? { startTime: { lte: now }, endTime: { gt: now } }
+        : { endTime: { lte: now } };
+
+  return {
+    ...timeFilter,
+    ...(platform ? { platform } : {}),
+  };
+}
 
 /**
  * 处理 GET /api/contests 请求
@@ -46,14 +66,17 @@ export async function GET(request: Request) {
       );
     }
 
-    // 校验 status 参数（upcoming / finished）
-    const status = url.searchParams.get("status") ?? "upcoming";
-    if (!ALLOWED_STATUSES.has(status)) {
+    // 校验 status 参数（upcoming / ongoing / finished）
+    const statusRaw = url.searchParams.get("status") ?? "upcoming";
+    if (!ALLOWED_STATUSES.has(statusRaw as ContestStatus)) {
       return NextResponse.json(
-        { error: `不支持的 status: ${status}（可选值: upcoming, finished）` },
+        {
+          error: `不支持的 status: ${statusRaw}（可选值: upcoming, ongoing, finished）`,
+        },
         { status: 400 }
       );
     }
+    const status = statusRaw as ContestStatus;
 
     // 校验 limit 参数（正整数，1-500）
     const limitRaw = url.searchParams.get("limit");
@@ -70,15 +93,9 @@ export async function GET(request: Request) {
     }
 
     const now = new Date();
-    const isFinished = status === "finished";
-
-    // 查询数据库：即将开始（升序）或已结束（倒序）
     const contests = await prisma.contest.findMany({
-      where: {
-        startTime: isFinished ? { lte: now } : { gt: now },
-        ...(platform ? { platform } : {}),
-      },
-      orderBy: { startTime: isFinished ? "desc" : "asc" },
+      where: buildWhere(now, status, platform),
+      orderBy: { startTime: status === "finished" ? "desc" : "asc" },
       take: limit,
     });
 

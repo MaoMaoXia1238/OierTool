@@ -19,7 +19,10 @@ export async function GET() {
   try {
     // 数据库连通性：轻量查询最近一次爬虫日志
     const latestLog = await Promise.race([
-      prisma.crawlLog.findFirst({ orderBy: { createdAt: "desc" } }),
+      prisma.crawlLog.findFirst({
+        orderBy: { createdAt: "desc" },
+        select: { createdAt: true },
+      }),
       new Promise<null>((_, reject) =>
         setTimeout(
           () => reject(new Error("数据库查询超时")),

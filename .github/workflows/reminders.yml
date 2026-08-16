@@ -1,0 +1,48 @@
+# OierTool Web Push 提醒定时任务
+#
+# 每 15 分钟查询一次数据库中 15 分钟内开始的比赛，
+# 并通过 web 内部接口 /api/push/send 触发浏览器通知。
+#
+# GitHub Actions 定时任务可能因负载出现分钟级延迟，因此提醒窗口设计为
+# 15 分钟而不是压缩到 1-2 分钟，两者配合即可覆盖大部分比赛提醒场景。
+
+name: Reminders
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+on:
+  schedule:
+    - cron: "*/15 * * * *"
+  workflow_dispatch:
+
+jobs:
+  remind:
+    name: 比赛提醒检查
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 安装 Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: "npm"
+
+      - name: 安装依赖
+        run: npm ci
+
+      - name: 生成 Prisma Client
+        run: npx prisma generate
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+
+      - name: 执行提醒检查
+        run: npx tsx crawler/reminder-once.ts
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          INTERNAL_API_SECRET: ${{ secrets.INTERNAL_API_SECRET }}
+          # 生产站点内部接口；自托管请改用 Docker 内 scheduler（无需此工作流）
+          WEB_INTERNAL_URL: https://oiertool.cn

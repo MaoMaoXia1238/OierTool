@@ -97,7 +97,7 @@ npm run crawl -w crawler    # 手动执行一次全平台爬取
 | 参数 | 类型 | 必填 | 说明 |
 |------|------|------|------|
 | `platform` | string | 否 | 按平台筛选：`Codeforces` / `AtCoder` / `Luogu` / `NowCoder` / `LeetCode` |
-| `status` | string | 否 | `upcoming`（默认）/ `finished`（已结束，倒序） |
+| `status` | string | 否 | `upcoming`（默认，未开始）/ `ongoing`（进行中）/ `finished`（已结束，倒序） |
 | `limit` | number | 否 | 返回数量上限，1-500，默认 100 |
 
 ### `GET /api/calendar.ics` — iCal 日历订阅
@@ -116,6 +116,7 @@ npm run crawl -w crawler    # 手动执行一次全平台爬取
 
 - **Web 前端**：GitHub Actions 自动部署至 Vercel（推送 `main` 触发）
 - **定时爬虫**：GitHub Actions 定时任务每日 3 次执行
+- **比赛提醒**：独立 GitHub Actions 定时任务每 15 分钟检查一次待提醒比赛
 - **Docker 自托管**：国内服务器可用 `docker compose up -d --build` 一键部署 web + crawler + PostgreSQL（爬虫容器内置 node-cron，每日 08:00 北京时间自动爬取）
 
 ## License

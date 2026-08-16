@@ -7,7 +7,7 @@
 /** 默认跳转地址（未携带 url 时） */
 const DEFAULT_URL = "/calendar";
 
-self.addEventListener("install", (event) => {
+self.addEventListener("install", () => {
   // 立即激活，不等待旧版本
   self.skipWaiting();
 });
@@ -49,8 +49,9 @@ self.addEventListener("notificationclick", (event) => {
 
   event.waitUntil(
     self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clientList) => {
+      const target = new URL(url, self.location.origin).href;
       for (const client of clientList) {
-        if ("focus" in client && client.url.includes(url)) {
+        if ("focus" in client && new URL(client.url).href === target) {
           return client.focus();
         }
       }

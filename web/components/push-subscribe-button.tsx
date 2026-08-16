@@ -47,8 +47,12 @@ export function PushSubscribeButton() {
           setState("unsupported");
           return;
         }
-        const registration = await navigator.serviceWorker.ready;
-        const sub = await registration.pushManager.getSubscription();
+        // 使用 getRegistration 而不是 serviceWorker.ready：
+        // 尚未注册过 SW 时 ready 会一直等待，导致按钮长期停留在初始状态。
+        const registration = await navigator.serviceWorker.getRegistration();
+        const sub = registration
+          ? await registration.pushManager.getSubscription()
+          : null;
         if (!cancelled) setState(sub ? "subscribed" : "idle");
       } catch {
         if (!cancelled) setState("idle");
@@ -102,7 +106,11 @@ export function PushSubscribeButton() {
   const disablePush = useCallback(async () => {
     setState("busy");
     try {
-      const registration = await navigator.serviceWorker.ready;
+      const registration = await navigator.serviceWorker.getRegistration();
+      if (!registration) {
+        setState("idle");
+        return;
+      }
       const subscription = await registration.pushManager.getSubscription();
       if (subscription) {
         // 通知服务端删除
